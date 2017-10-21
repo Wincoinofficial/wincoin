@@ -2547,7 +2547,7 @@ bool LoadBlockIndex(bool fAllowNew)
         block.nVersion = 1;
         block.nTime    = GENESIS_TIME;
         block.nBits    = 0x1e0fffff;
-        block.nNonce   = 6547866;
+        block.nNonce   = 7658229;
         
         #ifdef GENESIS_MINER
         if (true  && (block.GetHash() != hashGenesisBlock)) {
