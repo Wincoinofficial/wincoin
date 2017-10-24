@@ -71,7 +71,7 @@ BitcoinGUI::BitcoinGUI(QWidget *parent):
     changePassphraseAction(0),
     unlockWalletAction(0),
     lockWalletAction(0),
-    aboutQtAction(0),
+//    aboutQtAction(0),
     trayIcon(0),
     notificator(0),
     rpcConsole(0),
@@ -257,12 +257,12 @@ void BitcoinGUI::createActions()
     quitAction->setToolTip(tr("Quit application"));
     quitAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_Q));
     quitAction->setMenuRole(QAction::QuitRole);
-    aboutAction = new QAction(QIcon(":/icons/bitcoin"), tr("&About Wincoin"), this);
-    aboutAction->setToolTip(tr("Show information about Wincoin"));
-    aboutAction->setMenuRole(QAction::AboutRole);
-    aboutQtAction = new QAction(QIcon(":/trolltech/qmessagebox/images/qtlogo-64.png"), tr("About &Qt"), this);
-    aboutQtAction->setToolTip(tr("Show information about Qt"));
-    aboutQtAction->setMenuRole(QAction::AboutQtRole);
+//    aboutAction = new QAction(QIcon(":/icons/bitcoin"), tr("&About Wincoin"), this);
+//    aboutAction->setToolTip(tr("Show information about Wincoin"));
+//    aboutAction->setMenuRole(QAction::AboutRole);
+//    aboutQtAction = new QAction(QIcon(":/trolltech/qmessagebox/images/qtlogo-64.png"), tr("About &Qt"), this);
+//    aboutQtAction->setToolTip(tr("Show information about Qt"));
+//    aboutQtAction->setMenuRole(QAction::AboutQtRole);
     optionsAction = new QAction(QIcon(":/icons/options"), tr("&Options..."), this);
     optionsAction->setToolTip(tr("Modify configuration options for Wincoin"));
     optionsAction->setMenuRole(QAction::PreferencesRole);
@@ -287,8 +287,8 @@ void BitcoinGUI::createActions()
     openRPCConsoleAction->setToolTip(tr("Open debugging and diagnostic console"));
 
     connect(quitAction, SIGNAL(triggered()), qApp, SLOT(quit()));
-    connect(aboutAction, SIGNAL(triggered()), this, SLOT(aboutClicked()));
-    connect(aboutQtAction, SIGNAL(triggered()), qApp, SLOT(aboutQt()));
+//    connect(aboutAction, SIGNAL(triggered()), this, SLOT(aboutClicked()));
+//    connect(aboutQtAction, SIGNAL(triggered()), qApp, SLOT(aboutQt()));
     connect(optionsAction, SIGNAL(triggered()), this, SLOT(optionsClicked()));
     connect(toggleHideAction, SIGNAL(triggered()), this, SLOT(toggleHidden()));
     connect(encryptWalletAction, SIGNAL(triggered(bool)), this, SLOT(encryptWallet(bool)));
@@ -330,8 +330,8 @@ void BitcoinGUI::createMenuBar()
     QMenu *help = appMenuBar->addMenu(tr("&Help"));
     help->addAction(openRPCConsoleAction);
     help->addSeparator();
-    help->addAction(aboutAction);
-    help->addAction(aboutQtAction);
+//    help->addAction(aboutAction);
+//    help->addAction(aboutQtAction);
 }
 
 void BitcoinGUI::createToolBars()
@@ -371,7 +371,7 @@ void BitcoinGUI::setClientModel(ClientModel *clientModel)
                 toggleHideAction->setIcon(QIcon(":/icons/toolbar_testnet"));
             }
 
-            aboutAction->setIcon(QIcon(":/icons/toolbar_testnet"));
+           // aboutAction->setIcon(QIcon(":/icons/toolbar_testnet"));
         }
 
         // Keep up to date with client

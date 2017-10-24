@@ -83,7 +83,7 @@ private:
     QAction *addressBookAction;
     QAction *signMessageAction;
     QAction *verifyMessageAction;
-    QAction *aboutAction;
+    //  QAction *aboutAction;
     QAction *receiveCoinsAction;
     QAction *optionsAction;
     QAction *toggleHideAction;
@@ -93,7 +93,7 @@ private:
     QAction *changePassphraseAction;
     QAction *unlockWalletAction;
     QAction *lockWalletAction;
-    QAction *aboutQtAction;
+    //	QAction *aboutQtAction;
     QAction *openRPCConsoleAction;
 
     QSystemTrayIcon *trayIcon;
