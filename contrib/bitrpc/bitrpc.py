@@ -248,16 +248,16 @@ elif cmd == "sendmany":
 	except:
 		print "\n---An error occurred---\n"
 
-elif cmd == "sendwincoinddress":
+elif cmd == "sendtoaddress":
 	try:
 		to = raw_input("To (in format address1:amount1,address2:amount2,...): ")
 		amt = raw_input("Amount:")
 		comment = raw_input("Comment (optional): ")
 		commentto = raw_input("Comment-to (optional): ")
 		try:
-			print access.sendwincoinddress(to,amt,comment,commentto)
+			print access.sendtoaddress(to,amt,comment,commentto)
 		except:
-			print access.sendwincoinddress(to,amt)
+			print access.sendtoaddress(to,amt)
 	except:
 		print "\n---An error occurred---\n"
 

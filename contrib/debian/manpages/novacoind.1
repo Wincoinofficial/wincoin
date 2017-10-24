@@ -176,13 +176,13 @@ Returns a list of the last ['count'] transactions for 'account' - for all accoun
     "message"       : message associated with transaction (only for send).
     "to"            : message-to associated with transaction (only for send).
 .TP
-\fBmove <'fromaccount'> <'wincoinccount'> <'amount'> ['minconf=1'] ['comment']\fR
+\fBmove <'fromaccount'> <'toaccount'> <'amount'> ['minconf=1'] ['comment']\fR
 Moves funds between accounts.
 .TP
 \fBsendfrom* <'account'> <'novacoinaddress'> <'amount'> ['minconf=1'] ['comment'] ['comment-to']\fR
-Sends amount from account's balance to 'novacoinaddress'. This method will fail if there is less than amount novacoins with ['minconf'] confirmations in the account's balance (unless account is the empty-string-named default account; it behaves like the *sendwincoinddress* method). Returns transaction ID on success.
+Sends amount from account's balance to 'novacoinaddress'. This method will fail if there is less than amount novacoins with ['minconf'] confirmations in the account's balance (unless account is the empty-string-named default account; it behaves like the *sendtoaddress* method). Returns transaction ID on success.
 .TP     
-\fBsendwincoinddress 'novacoinaddress' 'amount' ['comment'] ['comment-to']\fR
+\fBsendtoaddress 'novacoinaddress' 'amount' ['comment'] ['comment-to']\fR
 Sends amount from the server's available balance to 'novacoinaddress'. amount is a real and is rounded to the nearest 0.01. Returns transaction id on success.
 .TP    
 \fBstop\fR
