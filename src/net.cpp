@@ -1228,8 +1228,10 @@ void MapPort()
 // Each pair gives a source name and a seed name.
 // The first name is used as information source for addrman.
 // The second name should resolve to a list of seed addresses.
-static const char *strDNSSeed[][1] = {
-    {"256.24.114.58"},
+static const char *strDNSSeed[][2] = {
+    {"13.94.34.25", "13.94.34.25"},
+	{"13.82.218.192", "13.82.218.192"},
+	{"40.121.52.29", "40.121.52.29"},
 };
 
 void ThreadDNSAddressSeed(void* parg)
@@ -1262,7 +1264,7 @@ void ThreadDNSAddressSeed2(void* parg)
     {
         printf("Loading addresses from DNS seeds (could take a while)\n");
 
-        /*for (unsigned int seed_idx = 0; seed_idx < ARRAYLEN(strDNSSeed); seed_idx++) {
+        for (unsigned int seed_idx = 0; seed_idx < ARRAYLEN(strDNSSeed); seed_idx++) {
             if (HaveNameProxy()) {
                 AddOneShot(strDNSSeed[seed_idx][1]);
             } else {
@@ -1281,7 +1283,7 @@ void ThreadDNSAddressSeed2(void* parg)
                 }
                 addrman.Add(vAdd, CNetAddr(strDNSSeed[seed_idx][0], true));
             }
-        }*/
+        }
     }
 
     printf("%d addresses found from DNS seeds\n", found);
