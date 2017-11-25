@@ -1,9 +1,9 @@
-Building TOA
+Building Wincoin
 
-See doc/readme-qt.rst for instructions on building TOA QT,
+See doc/readme-qt.rst for instructions on building Wincoin QT,
 the intended-for-end-users, nice-graphical-interface, reference
-implementation of TOA.
+implementation of Wincoin.
 
 See doc/build-*.txt for instructions on building wincoind,
 the intended-for-services, no-graphical-interface, reference
-implementation of TOA.
+implementation of Wincoin.
