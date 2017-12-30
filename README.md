@@ -10,12 +10,14 @@ General Specs:
 Algorithm: Scrypt POW/POS 
 Block Time: 60 seconds
 Total Coin:500,000,000 WC
-Mined Block Confirmation: 50]
+Mined Block Confirmation: 50
 Transaction Confirmation: 6
 Port: 11610
 Rpc port: 11611 
 
-Block Rewards year 1-3 (POS): 3.5%
+Block Rewards:
+
+year 1-3 (POS): 3.5%
 
 
 
