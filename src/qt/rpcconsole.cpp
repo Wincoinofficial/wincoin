@@ -10,7 +10,9 @@
 #include <QThread>
 #include <QTextEdit>
 #include <QKeyEvent>
-#include <QUrl>
+#if QT_VERSION < 0x050000
+ #include <QUrl>
+#endif
 #include <QScrollBar>
 
 #include <openssl/crypto.h>
@@ -73,10 +75,10 @@ bool parseCommandLine(std::vector<std::string> &args, const std::string &strComm
     {
         STATE_EATING_SPACES,
         STATE_ARGUMENT,
-        STATE_SINGLEQUOTED,
-        STATE_DOUBLEQUOTED,
-        STATE_ESCAPE_OUTER,
-        STATE_ESCAPE_DOUBLEQUOTED
+        STATE_SINGLEQUOWC,
+        STATE_DOUBLEQUOWC,
+        STATE_WCAPE_OUTER,
+        STATE_WCAPE_DOUBLEQUOWC
     } state = STATE_EATING_SPACES;
     std::string curarg;
     foreach(char ch, strCommand)
@@ -87,9 +89,9 @@ bool parseCommandLine(std::vector<std::string> &args, const std::string &strComm
         case STATE_EATING_SPACES: // Handle runs of whitespace
             switch(ch)
             {
-            case '"': state = STATE_DOUBLEQUOTED; break;
-            case '\'': state = STATE_SINGLEQUOTED; break;
-            case '\\': state = STATE_ESCAPE_OUTER; break;
+            case '"': state = STATE_DOUBLEQUOWC; break;
+            case '\'': state = STATE_SINGLEQUOWC; break;
+            case '\\': state = STATE_WCAPE_OUTER; break;
             case ' ': case '\n': case '\t':
                 if(state == STATE_ARGUMENT) // Space ends argument
                 {
@@ -101,27 +103,27 @@ bool parseCommandLine(std::vector<std::string> &args, const std::string &strComm
             default: curarg += ch; state = STATE_ARGUMENT;
             }
             break;
-        case STATE_SINGLEQUOTED: // Single-quoted string
+        case STATE_SINGLEQUOWC: // Single-quoted string
             switch(ch)
             {
             case '\'': state = STATE_ARGUMENT; break;
             default: curarg += ch;
             }
             break;
-        case STATE_DOUBLEQUOTED: // Double-quoted string
+        case STATE_DOUBLEQUOWC: // Double-quoted string
             switch(ch)
             {
             case '"': state = STATE_ARGUMENT; break;
-            case '\\': state = STATE_ESCAPE_DOUBLEQUOTED; break;
+            case '\\': state = STATE_WCAPE_DOUBLEQUOWC; break;
             default: curarg += ch;
             }
             break;
-        case STATE_ESCAPE_OUTER: // '\' outside quotes
+        case STATE_WCAPE_OUTER: // '\' outside quotes
             curarg += ch; state = STATE_ARGUMENT;
             break;
-        case STATE_ESCAPE_DOUBLEQUOTED: // '\' in double-quoted text
+        case STATE_WCAPE_DOUBLEQUOWC: // '\' in double-quoted text
             if(ch != '"' && ch != '\\') curarg += '\\'; // keep '\' for everything but the quote and '\' itself
-            curarg += ch; state = STATE_DOUBLEQUOTED;
+            curarg += ch; state = STATE_DOUBLEQUOWC;
             break;
         }
     }
@@ -312,7 +314,7 @@ void RPCConsole::clear()
                 "b { color: #006060; } "
                 );
 
-    message(CMD_REPLY, (tr("Welcome to the Wincoin RPC console.") + "<br>" +
+    message(CMD_REPLY, (tr("Welcome to the WinCoin RPC console.") + "<br>" +
                         tr("Use up and down arrows to navigate history, and <b>Ctrl-L</b> to clear screen.") + "<br>" +
                         tr("Type <b>help</b> for an overview of available commands.")), true);
 }
@@ -359,8 +361,8 @@ void RPCConsole::on_lineEdit_returnPressed()
     {
         message(CMD_REQUEST, cmd);
         emit cmdRequest(cmd);
-        // Remove command, if already in history
-        history.removeOne(cmd);
+        // Truncate history from current position
+        history.erase(history.begin() + historyPtr, history.end());
         // Append command to history
         history.append(cmd);
         // Enforce maximum history size

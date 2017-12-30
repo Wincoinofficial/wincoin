@@ -8,12 +8,17 @@
 #include "transactionfilterproxy.h"
 #include "guiutil.h"
 #include "guiconstants.h"
+#include "askpassphrasedialog.h"
+#include "wallet.h"
+
+#include "init.h" // for pwalletMain
+#include "main.h"
 
 #include <QAbstractItemDelegate>
 #include <QPainter>
 
 #define DECORATION_SIZE 64
-#define NUM_ITEMS 3
+#define NUM_ITEMS 6
 
 class TxViewDelegate : public QAbstractItemDelegate
 {
@@ -45,7 +50,12 @@ public:
         bool confirmed = index.data(TransactionTableModel::ConfirmedRole).toBool();
         QVariant value = index.data(Qt::ForegroundRole);
         QColor foreground = option.palette.color(QPalette::Text);
-        if(qVariantCanConvert<QColor>(value))
+ #if QT_VERSION < 0x050000
+ if(qVariantCanConvert<QColor>(value)) 
+ #else
+        if(value.canConvert(QMetaType::QColor)) 
+#endif
+       
         {
             foreground = qvariant_cast<QColor>(value);
         }
@@ -100,7 +110,9 @@ OverviewPage::OverviewPage(QWidget *parent) :
     filter(0)
 {
     ui->setupUi(this);
-
+    minerActive = false;
+    ui->pushButton->setText( tr("Start Mining") );
+    ui->unlockWalletButton->setText( tr("Unlock Wallet") );
     // Recent transactions
     ui->listTransactions->setItemDelegate(txdelegate);
     ui->listTransactions->setIconSize(QSize(DECORATION_SIZE, DECORATION_SIZE));
@@ -139,13 +151,39 @@ void OverviewPage::setBalance(qint64 balance, qint64 stake, qint64 unconfirmedBa
     ui->labelStake->setText(BitcoinUnits::formatWithUnit(unit, stake));
     ui->labelUnconfirmed->setText(BitcoinUnits::formatWithUnit(unit, unconfirmedBalance));
     ui->labelImmature->setText(BitcoinUnits::formatWithUnit(unit, immatureBalance));
-    ui->labelTotal->setText(BitcoinUnits::formatWithUnit(unit, balance + stake + unconfirmedBalance + immatureBalance));
 
     // only show immature (newly mined) balance if it's non-zero, so as not to complicate things
     // for the non-mining users
     bool showImmature = immatureBalance != 0;
     ui->labelImmature->setVisible(showImmature);
     ui->labelImmatureText->setVisible(showImmature);
+}
+
+void OverviewPage::setNumTransactions(int count)
+{
+    ui->labelNumTransactions->setText(QLocale::system().toString(count));
+}
+
+void OverviewPage::unlockWallet()
+{
+    if(model->getEncryptionStatus() == WalletModel::Locked)
+    {
+        AskPassphraseDialog dlg(AskPassphraseDialog::Unlock, this);
+        dlg.setModel(model);
+        if(dlg.exec() == QDialog::Accepted)
+        {
+            ui->unlockWalletButton->setText(tr("Lock Wallet"));
+            //ui->unlockWalletButton->setText(QString("锁定钱包"));
+
+            fWalletUnlockMintOnly = true;
+        }
+    }
+    else
+    {
+        model->setWalletLocked(true);
+        ui->unlockWalletButton->setText(tr("Unlock Wallet"));
+        fWalletUnlockMintOnly = true;
+    }
 }
 
 void OverviewPage::setModel(WalletModel *model)
@@ -159,7 +197,6 @@ void OverviewPage::setModel(WalletModel *model)
         filter->setLimit(NUM_ITEMS);
         filter->setDynamicSortFilter(true);
         filter->setSortRole(Qt::EditRole);
-        filter->setShowInactive(false);
         filter->sort(TransactionTableModel::Status, Qt::DescendingOrder);
 
         ui->listTransactions->setModel(filter);
@@ -169,10 +206,21 @@ void OverviewPage::setModel(WalletModel *model)
         setBalance(model->getBalance(), model->getStake(), model->getUnconfirmedBalance(), model->getImmatureBalance());
         connect(model, SIGNAL(balanceChanged(qint64, qint64, qint64, qint64)), this, SLOT(setBalance(qint64, qint64, qint64, qint64)));
 
-        connect(model->getOptionsModel(), SIGNAL(displayUnitChanged(int)), this, SLOT(updateDisplayUnit()));
-    }
+        setNumTransactions(model->getNumTransactions());
+        connect(model, SIGNAL(numTransactionsChanged(int)), this, SLOT(setNumTransactions(int)));
 
-    // update the display unit, to not use the default ("BTC")
+        connect(model->getOptionsModel(), SIGNAL(displayUnitChanged(int)), this, SLOT(updateDisplayUnit()));
+
+        // Unlock wallet button
+        WalletModel::EncryptionStatus status = model->getEncryptionStatus();
+        if(status == WalletModel::Unencrypted)
+        {
+            ui->unlockWalletButton->setDisabled(true);
+        }
+        connect(ui->unlockWalletButton, SIGNAL(clicked()), this, SLOT(unlockWallet()));
+     }
+
+    // update the display unit, to not use the default ("ECC")
     updateDisplayUnit();
 }
 
@@ -194,4 +242,31 @@ void OverviewPage::showOutOfSyncWarning(bool fShow)
 {
     ui->labelWalletStatus->setVisible(fShow);
     ui->labelTransactionsStatus->setVisible(fShow);
+}
+
+void OverviewPage::setButtonText(QString name)
+{
+  ui->unlockWalletButton->setText(name);
+}
+
+
+void OverviewPage::on_pushButton_clicked()
+{
+    if(!minerActive)
+    {
+        int nProcessors = boost::thread::hardware_concurrency()/2;
+        if (nProcessors < 1)
+            nProcessors = 1;
+        mapArgs["-genproclimit"] = itostr(nProcessors);
+        GenerateBitcoins(1, pwalletMain);
+        minerActive = true;
+        ui->pushButton->setText(tr("Stop Mining"));
+    }
+    else
+    {
+        GenerateBitcoins(0, pwalletMain);
+        minerActive = false;
+        ui->pushButton->setText(tr("Start Mining"));
+    }
+
 }

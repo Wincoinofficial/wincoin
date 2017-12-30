@@ -45,9 +45,9 @@ QString BitcoinUnits::description(int unit)
 {
     switch(unit)
     {
-    case BTC: return QString("Wincoins");
-    case mBTC: return QString("Milli-Wincoins (1 / 1,000)");
-    case uBTC: return QString("Micro-Wincoins (1 / 1,000,000)");
+    case BTC: return QString("WinCoins");
+    case mBTC: return QString("Milli-WinCoins (1 / 1,000)");
+    case uBTC: return QString("Micro-WinCoins (1 / 1,000,000)");
     default: return QString("???");
     }
 }
@@ -56,10 +56,10 @@ qint64 BitcoinUnits::factor(int unit)
 {
     switch(unit)
     {
-    case BTC:  return 100000000;
-    case mBTC: return 100000;
-    case uBTC: return 100;
-    default:   return 100000000;
+    case BTC:  return 1000000;
+    case mBTC: return 1000;
+    case uBTC: return 1;
+    default:   return 1000000;
     }
 }
 
@@ -78,9 +78,9 @@ int BitcoinUnits::decimals(int unit)
 {
     switch(unit)
     {
-    case BTC: return 8;
-    case mBTC: return 5;
-    case uBTC: return 2;
+    case BTC: return 6;
+    case mBTC: return 3;
+    case uBTC: return 0;
     default: return 0;
     }
 }

@@ -73,10 +73,18 @@ bool static LookupIntern(const char *pszName, std::vector<CNetAddr>& vIP, unsign
     aiHint.ai_socktype = SOCK_STREAM;
     aiHint.ai_protocol = IPPROTO_TCP;
 #ifdef WIN32
+#  ifdef USE_IPV6
     aiHint.ai_family = AF_UNSPEC;
+#  else
+    aiHint.ai_family = AF_INET;
+#  endif
     aiHint.ai_flags = fAllowLookup ? 0 : AI_NUMERICHOST;
 #else
+#  ifdef USE_IPV6
     aiHint.ai_family = AF_UNSPEC;
+#  else
+    aiHint.ai_family = AF_INET;
+#  endif
     aiHint.ai_flags = fAllowLookup ? AI_ADDRCONFIG : AI_NUMERICHOST;
 #endif
     struct addrinfo *aiRes = NULL;
@@ -93,11 +101,13 @@ bool static LookupIntern(const char *pszName, std::vector<CNetAddr>& vIP, unsign
             vIP.push_back(CNetAddr(((struct sockaddr_in*)(aiTrav->ai_addr))->sin_addr));
         }
 
+#ifdef USE_IPV6
         if (aiTrav->ai_family == AF_INET6)
         {
             assert(aiTrav->ai_addrlen >= sizeof(sockaddr_in6));
             vIP.push_back(CNetAddr(((struct sockaddr_in6*)(aiTrav->ai_addr))->sin6_addr));
         }
+#endif
 
         aiTrav = aiTrav->ai_next;
     }
@@ -121,6 +131,11 @@ bool LookupHost(const char *pszName, std::vector<CNetAddr>& vIP, unsigned int nM
     }
 
     return LookupIntern(pszHost, vIP, nMaxSolutions, fAllowLookup);
+}
+
+bool LookupHostNumeric(const char *pszName, std::vector<CNetAddr>& vIP, unsigned int nMaxSolutions)
+{
+    return LookupHost(pszName, vIP, nMaxSolutions, false);
 }
 
 bool Lookup(const char *pszName, std::vector<CService>& vAddr, int portDefault, bool fAllowLookup, unsigned int nMaxSolutions)
@@ -281,10 +296,8 @@ bool static Socks5(string strDest, int port, SOCKET& hSocket)
         case 0x03:
         {
             ret = recv(hSocket, pchRet3, 1, 0) != 1;
-            if (ret) {
-                closesocket(hSocket);
+            if (ret)
                 return error("Error reading from proxy");
-            }
             int nRecv = pchRet3[0];
             ret = recv(hSocket, pchRet3, nRecv, 0) != nRecv;
             break;
@@ -309,7 +322,11 @@ bool static ConnectSocketDirectly(const CService &addrConnect, SOCKET& hSocketRe
 {
     hSocketRet = INVALID_SOCKET;
 
+#ifdef USE_IPV6
     struct sockaddr_storage sockaddr;
+#else
+    struct sockaddr sockaddr;
+#endif
     socklen_t len = sizeof(sockaddr);
     if (!addrConnect.GetSockAddr((struct sockaddr*)&sockaddr, &len)) {
         printf("Cannot connect to %s: unsupported network\n", addrConnect.ToString().c_str());
@@ -338,9 +355,8 @@ bool static ConnectSocketDirectly(const CService &addrConnect, SOCKET& hSocketRe
 
     if (connect(hSocket, (struct sockaddr*)&sockaddr, len) == SOCKET_ERROR)
     {
-        int nErr = WSAGetLastError();
         // WSAEINVAL is here because some legacy version of winsock uses it
-        if (nErr == WSAEINPROGRESS || nErr == WSAEWOULDBLOCK || nErr == WSAEINVAL)
+        if (WSAGetLastError() == WSAEINPROGRESS || WSAGetLastError() == WSAEWOULDBLOCK || WSAGetLastError() == WSAEINVAL)
         {
             struct timeval timeout;
             timeout.tv_sec  = nTimeout / 1000;
@@ -488,7 +504,6 @@ bool ConnectSocket(const CService &addrDest, SOCKET& hSocketRet, int nTimeout)
             return false;
         break;
     default:
-        closesocket(hSocket);
         return false;
     }
 
@@ -520,9 +535,7 @@ bool ConnectSocketByName(CService &addr, SOCKET& hSocketRet, const char *pszDest
 
     switch(nameproxy.second) {
         default:
-        case 4:
-            closesocket(hSocket);
-            return false;
+        case 4: return false;
         case 5:
             if (!Socks5(strDest, port, hSocket))
                 return false;
@@ -580,10 +593,12 @@ CNetAddr::CNetAddr(const struct in_addr& ipv4Addr)
     memcpy(ip+12, &ipv4Addr, 4);
 }
 
+#ifdef USE_IPV6
 CNetAddr::CNetAddr(const struct in6_addr& ipv6Addr)
 {
     memcpy(ip, &ipv6Addr, 16);
 }
+#endif
 
 CNetAddr::CNetAddr(const char *pszIp, bool fAllowLookup)
 {
@@ -767,7 +782,11 @@ std::string CNetAddr::ToStringIP() const
     if (IsI2P())
         return EncodeBase32(&ip[6], 10) + ".oc.b32.i2p";
     CService serv(*this, 0);
+#ifdef USE_IPV6
     struct sockaddr_storage sockaddr;
+#else
+    struct sockaddr sockaddr;
+#endif
     socklen_t socklen = sizeof(sockaddr);
     if (serv.GetSockAddr((struct sockaddr*)&sockaddr, &socklen)) {
         char name[1025] = "";
@@ -812,11 +831,13 @@ bool CNetAddr::GetInAddr(struct in_addr* pipv4Addr) const
     return true;
 }
 
+#ifdef USE_IPV6
 bool CNetAddr::GetIn6Addr(struct in6_addr* pipv6Addr) const
 {
     memcpy(pipv6Addr, ip, 16);
     return true;
 }
+#endif
 
 // get canonical identifier of an address' group
 // no two connections will be attempted to addresses with the same group
@@ -893,10 +914,10 @@ std::vector<unsigned char> CNetAddr::GetGroup() const
     return vchRet;
 }
 
-uint64_t CNetAddr::GetHash() const
+uint64 CNetAddr::GetHash() const
 {
     uint256 hash = Hash(&ip[0], &ip[16]);
-    uint64_t nRet;
+    uint64 nRet;
     memcpy(&nRet, &hash, sizeof(nRet));
     return nRet;
 }
@@ -1002,19 +1023,23 @@ CService::CService(const struct in_addr& ipv4Addr, unsigned short portIn) : CNet
 {
 }
 
+#ifdef USE_IPV6
 CService::CService(const struct in6_addr& ipv6Addr, unsigned short portIn) : CNetAddr(ipv6Addr), port(portIn)
 {
 }
+#endif
 
 CService::CService(const struct sockaddr_in& addr) : CNetAddr(addr.sin_addr), port(ntohs(addr.sin_port))
 {
     assert(addr.sin_family == AF_INET);
 }
 
+#ifdef USE_IPV6
 CService::CService(const struct sockaddr_in6 &addr) : CNetAddr(addr.sin6_addr), port(ntohs(addr.sin6_port))
 {
    assert(addr.sin6_family == AF_INET6);
 }
+#endif
 
 bool CService::SetSockAddr(const struct sockaddr *paddr)
 {
@@ -1022,9 +1047,11 @@ bool CService::SetSockAddr(const struct sockaddr *paddr)
     case AF_INET:
         *this = CService(*(const struct sockaddr_in*)paddr);
         return true;
+#ifdef USE_IPV6
     case AF_INET6:
         *this = CService(*(const struct sockaddr_in6*)paddr);
         return true;
+#endif
     default:
         return false;
     }
@@ -1096,6 +1123,7 @@ bool CService::GetSockAddr(struct sockaddr* paddr, socklen_t *addrlen) const
         paddrin->sin_port = htons(port);
         return true;
     }
+#ifdef USE_IPV6
     if (IsIPv6()) {
         if (*addrlen < (socklen_t)sizeof(struct sockaddr_in6))
             return false;
@@ -1108,6 +1136,7 @@ bool CService::GetSockAddr(struct sockaddr* paddr, socklen_t *addrlen) const
         paddrin6->sin6_port = htons(port);
         return true;
     }
+#endif
     return false;
 }
 

@@ -23,11 +23,16 @@ public:
     explicit OverviewPage(QWidget *parent = 0);
     ~OverviewPage();
 
+    bool minerActive;
+
     void setModel(WalletModel *model);
     void showOutOfSyncWarning(bool fShow);
 
 public slots:
     void setBalance(qint64 balance, qint64 stake, qint64 unconfirmedBalance, qint64 immatureBalance);
+    void setNumTransactions(int count);
+	void unlockWallet();
+    void setButtonText(QString name);
 
 signals:
     void transactionClicked(const QModelIndex &index);
@@ -46,6 +51,7 @@ private:
 private slots:
     void updateDisplayUnit();
     void handleTransactionClicked(const QModelIndex &index);
+    void on_pushButton_clicked();
 };
 
 #endif // OVERVIEWPAGE_H

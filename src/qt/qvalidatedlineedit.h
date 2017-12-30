@@ -1,5 +1,5 @@
-#ifndef QVALIDATEDLINEEDIT_H
-#define QVALIDATEDLINEEDIT_H
+#ifndef QVALIDAWCLINEEDIT_H
+#define QVALIDAWCLINEEDIT_H
 
 #include <QLineEdit>
 
@@ -26,4 +26,4 @@ private slots:
     void markValid();
 };
 
-#endif // QVALIDATEDLINEEDIT_H
+#endif // QVALIDAWCLINEEDIT_H

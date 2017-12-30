@@ -16,14 +16,14 @@ if [ -e "$(which git)" ]; then
     git diff >/dev/null 2>/dev/null 
 
     # get a string like "v0.6.0-66-g59887e8-dirty"
-    DESC="$(git describe --dirty 2>/dev/null)"
+    DWC="$(git describe --dirty 2>/dev/null)"
 
     # get a string like "2012-04-10 16:27:19 +0200"
     TIME="$(git log -n 1 --format="%ci")"
 fi
 
-if [ -n "$DESC" ]; then
-    NEWINFO="#define BUILD_DESC \"$DESC\""
+if [ -n "$DWC" ]; then
+    NEWINFO="#define BUILD_DWC \"$DWC\""
 else
     NEWINFO="// No build information available"
 fi

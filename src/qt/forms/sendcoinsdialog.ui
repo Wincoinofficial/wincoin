@@ -13,9 +13,6 @@
   <property name="windowTitle">
    <string>Send Coins</string>
   </property>
-  <property name="styleSheet">
-   <string notr="true">background-image: url(:/images/2s);</string>
-  </property>
   <layout class="QVBoxLayout" name="verticalLayout" stretch="0,1,0">
    <property name="bottomMargin">
     <number>8</number>
@@ -110,7 +107,7 @@
              <string notr="true"/>
             </property>
             <property name="text">
-             <string>Inputs...</string>
+             <string>&amp;Inputs...</string>
             </property>
            </widget>
           </item>
@@ -638,7 +635,7 @@
         <x>0</x>
         <y>0</y>
         <width>830</width>
-        <height>172</height>
+        <height>173</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout_2">
@@ -730,12 +727,6 @@
        </property>
        <item>
         <widget class="QLabel" name="label">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
          <property name="text">
           <string>Balance:</string>
          </property>
@@ -743,12 +734,6 @@
        </item>
        <item>
         <widget class="QLabel" name="labelBalance">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-           <horstretch>0</horstretch>
-           <verstretch>0</verstretch>
-          </sizepolicy>
-         </property>
          <property name="cursor">
           <cursorShape>IBeamCursor</cursorShape>
          </property>

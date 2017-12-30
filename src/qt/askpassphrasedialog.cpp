@@ -7,8 +7,7 @@
 #include <QMessageBox>
 #include <QPushButton>
 #include <QKeyEvent>
-
-extern bool fWalletUnlockStakingOnly;
+#include <QPushButton>
 
 AskPassphraseDialog::AskPassphraseDialog(Mode mode, QWidget *parent) :
     QDialog(parent),
@@ -18,6 +17,8 @@ AskPassphraseDialog::AskPassphraseDialog(Mode mode, QWidget *parent) :
     fCapsLock(false)
 {
     ui->setupUi(this);
+    ui->buttonBox->button(QDialogButtonBox::Ok)->setText(QString("确定"));
+    ui->buttonBox->button(QDialogButtonBox::Cancel)->setText(QString("取消"));
     ui->passEdit1->setMaxLength(MAX_PASSPHRASE_SIZE);
     ui->passEdit2->setMaxLength(MAX_PASSPHRASE_SIZE);
     ui->passEdit3->setMaxLength(MAX_PASSPHRASE_SIZE);
@@ -27,20 +28,14 @@ AskPassphraseDialog::AskPassphraseDialog(Mode mode, QWidget *parent) :
     ui->passEdit2->installEventFilter(this);
     ui->passEdit3->installEventFilter(this);
 
-    ui->stakingCheckBox->setChecked(fWalletUnlockStakingOnly);
-
     switch(mode)
     {
         case Encrypt: // Ask passphrase x2
             ui->passLabel1->hide();
             ui->passEdit1->hide();
-            ui->warningLabel->setText(tr("Enter the new passphrase to the wallet.<br/>Please use a passphrase of <b>ten or more random characters</b>, or <b>eight or more words</b>."));
+            ui->warningLabel->setText(tr("Enter the new passphrase to the wallet.<br/>Please use a passphrase of <b>10 or more random characters</b>, or <b>eight or more words</b>."));
             setWindowTitle(tr("Encrypt wallet"));
             break;
-        case UnlockStaking:
-            ui->stakingCheckBox->setChecked(true);
-            ui->stakingCheckBox->show();
-            // fallthru
         case Unlock: // Ask passphrase
             ui->warningLabel->setText(tr("This operation needs your wallet passphrase to unlock the wallet."));
             ui->passLabel2->hide();
@@ -71,7 +66,10 @@ AskPassphraseDialog::AskPassphraseDialog(Mode mode, QWidget *parent) :
 
 AskPassphraseDialog::~AskPassphraseDialog()
 {
-    secureClearPassFields();
+    // Attempt to overwrite text so that they do not linger around in memory
+    ui->passEdit1->setText(QString(" ").repeated(ui->passEdit1->text().size()));
+    ui->passEdit2->setText(QString(" ").repeated(ui->passEdit2->text().size()));
+    ui->passEdit3->setText(QString(" ").repeated(ui->passEdit3->text().size()));
     delete ui;
 }
 
@@ -94,8 +92,6 @@ void AskPassphraseDialog::accept()
     newpass1.assign(ui->passEdit2->text().toStdString().c_str());
     newpass2.assign(ui->passEdit3->text().toStdString().c_str());
 
-    secureClearPassFields();
-
     switch(mode)
     {
     case Encrypt: {
@@ -104,10 +100,21 @@ void AskPassphraseDialog::accept()
             // Cannot encrypt with empty passphrase
             break;
         }
-        QMessageBox::StandardButton retval = QMessageBox::question(this, tr("Confirm wallet encryption"),
-                 tr("Warning: If you encrypt your wallet and lose your passphrase, you will <b>LOSE ALL OF YOUR COINS</b>!") + "<br><br>" + tr("Are you sure you wish to encrypt your wallet?"),
-                 QMessageBox::Yes|QMessageBox::Cancel,
-                 QMessageBox::Cancel);
+//        QMessageBox::StandardButton retval = QMessageBox::question(this, tr("Confirm wallet encryption"),
+//                 tr("Warning: If you encrypt your wallet and lose your passphrase, you will <b>LOSE ALL OF YOUR COINS</b>!") + "<br><br>" + tr("Are you sure you wish to encrypt your wallet?"),
+//                 QMessageBox::Yes|QMessageBox::Cancel,
+//                 QMessageBox::Cancel);
+
+        QMessageBox box(QMessageBox::Question, tr("Confirm wallet encryption"),
+                        tr("Warning: If you encrypt your wallet and lose your passphrase, you will <b>LOSE ALL OF YOUR COINS</b>!") + "<br><br>" + tr("Are you sure you wish to encrypt your wallet?")
+                        );
+        box.setStandardButtons (QMessageBox::Yes|QMessageBox::Cancel);
+        box.setButtonText (QMessageBox::Yes,QString("确定"));
+        box.setButtonText (QMessageBox::Cancel,QString("取消"));
+
+
+        int retval = box.exec ();
+
         if(retval == QMessageBox::Yes)
         {
             if(newpass1 == newpass2)
@@ -116,7 +123,7 @@ void AskPassphraseDialog::accept()
                 {
                     QMessageBox::warning(this, tr("Wallet encrypted"),
                                          "<qt>" + 
-                                         tr("Wincoin will close now to finish the encryption process. "
+                                         tr("WinCoin will close now to finish the encryption process. "
                                          "Remember that encrypting your wallet cannot fully protect "
                                          "your coins from being stolen by malware infecting your computer.") + 
                                          "<br><br><b>" + 
@@ -145,7 +152,6 @@ void AskPassphraseDialog::accept()
             QDialog::reject(); // Cancelled
         }
         } break;
-    case UnlockStaking:
     case Unlock:
         if(!model->setWalletLocked(false, oldpass))
         {
@@ -154,7 +160,6 @@ void AskPassphraseDialog::accept()
         }
         else
         {
-            fWalletUnlockStakingOnly = ui->stakingCheckBox->isChecked();
             QDialog::accept(); // Success
         }
         break;
@@ -202,7 +207,6 @@ void AskPassphraseDialog::textChanged()
     case Encrypt: // New passphrase x2
         acceptable = !ui->passEdit2->text().isEmpty() && !ui->passEdit3->text().isEmpty();
         break;
-    case UnlockStaking:
     case Unlock: // Old passphrase x1
     case Decrypt:
         acceptable = !ui->passEdit1->text().isEmpty();
@@ -255,16 +259,4 @@ bool AskPassphraseDialog::eventFilter(QObject *object, QEvent *event)
         }
     }
     return QDialog::eventFilter(object, event);
-}
-
-void AskPassphraseDialog::secureClearPassFields()
-{
-    // Attempt to overwrite text so that they do not linger around in memory
-    ui->passEdit1->setText(QString(" ").repeated(ui->passEdit1->text().size()));
-    ui->passEdit2->setText(QString(" ").repeated(ui->passEdit2->text().size()));
-    ui->passEdit3->setText(QString(" ").repeated(ui->passEdit3->text().size()));
-
-    ui->passEdit1->clear();
-    ui->passEdit2->clear();
-    ui->passEdit3->clear();
 }

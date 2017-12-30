@@ -13,14 +13,11 @@
   <property name="windowTitle">
    <string>Address Book</string>
   </property>
-  <property name="styleSheet">
-   <string notr="true">background-image: url(:/images/2s);</string>
-  </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
     <widget class="QLabel" name="labelExplanation">
      <property name="text">
-      <string>These are your Wincoin addresses for receiving payments. You may want to give a different one to each sender so you can keep track of who is paying you.</string>
+      <string>There are your WinCoin addresses for receiving payments. You may want to give a different one to each sender so you can keep track of who is paying you.</string>
      </property>
      <property name="textFormat">
       <enum>Qt::PlainText</enum>
@@ -102,7 +99,7 @@
      <item>
       <widget class="QPushButton" name="signMessage">
        <property name="toolTip">
-        <string>Sign a message to prove you own a Wincoin address</string>
+        <string>Sign a message to prove you own a WinCoin address</string>
        </property>
        <property name="text">
         <string>Sign &amp;Message</string>
@@ -116,7 +113,7 @@
      <item>
       <widget class="QPushButton" name="verifyMessage">
        <property name="toolTip">
-        <string>Verify a message to ensure it was signed with a specified Wincoin address</string>
+        <string>Verify a message to ensure it was signed with a specified WinCoin address</string>
        </property>
        <property name="text">
         <string>&amp;Verify Message</string>

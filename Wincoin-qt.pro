@@ -1,25 +1,29 @@
 TEMPLATE = app
-TARGET = wincoin-qt
-VERSION = 1.0.7
+TARGET = WinCoin-qt
+VERSION = 0.8.5
 INCLUDEPATH += src src/json src/qt
-DEFINES += QT_GUI BOOST_THREAD_USE_LIB BOOST_SPIRIT_THREADSAFE
+QT += core gui network widgets
+greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+DEFINES += QT_GUI BOOST_THREAD_USE_LIB BOOST_SPIRIT_THREADSAFE BOOST_THREAD_PROVIDES_GENERIC_SHARED_MUTEX_ON_WIN __NO_SYSTEM_INCLUDES
 CONFIG += no_include_pwd
 CONFIG += thread
 
-greaterThan(QT_MAJOR_VERSION, 4) {
-    QT += widgets
-    DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0
-}
+# UNCOMMENT THIS SECTION TO BUILD ON WINDOWS
+# Change paths if needed, these use the foocoin/deps.git repository locations
 
-# for boost 1.37, add -mt to the boost libraries
-# use: qmake BOOST_LIB_SUFFIX=-mt
-# for boost thread win32 with _win32 sufix
-# use: BOOST_THREAD_LIB_SUFFIX=_win32-...
-# or when linking against a specific BerkelyDB version: BDB_LIB_SUFFIX=-4.8
+BOOST_LIB_SUFFIX=-mgw49-mt-sd-1_55
+BOOST_INCLUDE_PATH=D:/deps/boost_1_55_0
+BOOST_LIB_PATH=D:/deps/boost_1_55_0/stage/lib
+BDB_INCLUDE_PATH=D:/deps/db-4.8.30.NC/build_unix
+BDB_LIB_PATH=D:/deps/db-4.8.30.NC/build_unix
+OPENSSL_INCLUDE_PATH=D:/deps/openssl-1.0.1u/include
+OPENSSL_LIB_PATH=D:/deps/openssl-1.0.1u
+MINIUPNPC_LIB_PATH=D:/deps/miniupnpc-1.8/miniupnpc
+MINIUPNPC_INCLUDE_PATH=D:/deps/miniupnpc-1.8
 
-# Dependency library locations can be customized with:
-#    BOOST_INCLUDE_PATH, BOOST_LIB_PATH, BDB_INCLUDE_PATH,
-#    BDB_LIB_PATH, OPENSSL_INCLUDE_PATH and OPENSSL_LIB_PATH respectively
+QRENCODE_INCLUDE_PATH=D:/deps/qrencode-3.4.3
+QRENCODE_LIB_PATH=D:/deps/qrencode-3.4.3/.libs
+
 
 OBJECTS_DIR = build
 MOC_DIR = build
@@ -28,7 +32,7 @@ UI_DIR = build
 # use: qmake "RELEASE=1"
 contains(RELEASE, 1) {
     # Mac: compile for maximum compatibility (10.5, 32-bit)
-    macx:QMAKE_CXXFLAGS += -mmacosx-version-min=10.5 -arch x86_64 -isysroot /Developer/SDKs/MacOSX10.5.sdk
+    macx:QMAKE_CXXFLAGS += -mmacosx-version-min=10.5 -arch i386 -isysroot /Developer/SDKs/MacOSX10.5.sdk
 
     !windows:!macx {
         # Linux: static link
@@ -44,8 +48,6 @@ QMAKE_LFLAGS *= -fstack-protector-all --param ssp-buffer-size=1
 # This can be enabled for Windows, when we switch to MinGW >= 4.4.x.
 }
 # for extra security on Windows: enable ASLR and DEP via GCC linker flags
-win32:QMAKE_LFLAGS *= -Wl,--dynamicbase -Wl,--nxcompat
-win32:QMAKE_LFLAGS += -static-libgcc -static-libstdc++
 
 # use: qmake "USE_QRCODE=1"
 # libqrencode (http://fukuchi.org/works/qrencode/index.en.html) must be installed for support
@@ -72,14 +74,25 @@ contains(USE_UPNP, -) {
     win32:LIBS += -liphlpapi
 }
 
-# use: qmake "USE_DBUS=1" or qmake "USE_DBUS=0"
-linux:count(USE_DBUS, 0) {
-    USE_DBUS=1
-}
+
+# use: qmake "USE_DBUS=1"
 contains(USE_DBUS, 1) {
     message(Building with DBUS (Freedesktop notifications) support)
     DEFINES += USE_DBUS
     QT += dbus
+}
+
+# use: qmake "USE_IPV6=1" ( enabled by default; default)
+#  or: qmake "USE_IPV6=0" (disabled by default)
+#  or: qmake "USE_IPV6=-" (not supported)
+contains(USE_IPV6, -) {
+    message(Building without IPv6 support)
+} else {
+    message(Building with IPv6 support)
+    count(USE_IPV6, 0) {
+        USE_IPV6=1
+    }
+    DEFINES += USE_IPV6=$$USE_IPV6
 }
 
 contains(BITCOIN_NEED_QT_PLUGINS, 1) {
@@ -87,26 +100,6 @@ contains(BITCOIN_NEED_QT_PLUGINS, 1) {
     QTPLUGIN += qcncodecs qjpcodecs qtwcodecs qkrcodecs qtaccessiblewidgets
 }
 
-INCLUDEPATH += src/leveldb/include src/leveldb/helpers
-LIBS += $$PWD/src/leveldb/libleveldb.a $$PWD/src/leveldb/libmemenv.a
-SOURCES += src/txdb-leveldb.cpp
-!win32 {
-    # we use QMAKE_CXXFLAGS_RELEASE even without RELEASE=1 because we use RELEASE to indicate linking preferences not -O preferences
-    genleveldb.commands = cd $$PWD/src/leveldb && CC=$$QMAKE_CC CXX=$$QMAKE_CXX $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\" libleveldb.a libmemenv.a
-} else {
-    # make an educated guess about what the ranlib command is called
-    isEmpty(QMAKE_RANLIB) {
-        QMAKE_RANLIB = $$replace(QMAKE_STRIP, strip, ranlib)
-    }
-    LIBS += -lshlwapi
-    genleveldb.commands = cd $$PWD/src/leveldb && CC=$$QMAKE_CC CXX=$$QMAKE_CXX TARGET_OS=OS_WINDOWS_CROSSCOMPILE $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\" libleveldb.a libmemenv.a && $$QMAKE_RANLIB $$PWD/src/leveldb/libleveldb.a && $$QMAKE_RANLIB $$PWD/src/leveldb/libmemenv.a
-}
-genleveldb.target = $$PWD/src/leveldb/libleveldb.a
-genleveldb.depends = FORCE
-PRE_TARGETDEPS += $$PWD/src/leveldb/libleveldb.a
-QMAKE_EXTRA_TARGETS += genleveldb
-# Gross ugly hack that depends on qmake internals, unfortunately there is no other way to do it.
-QMAKE_CLEAN += $$PWD/src/leveldb/libleveldb.a; cd $$PWD/src/leveldb ; $(MAKE) clean
 
 # regenerate src/build.h
 !windows|contains(USE_BUILD_INFO, 1) {
@@ -118,22 +111,9 @@ QMAKE_CLEAN += $$PWD/src/leveldb/libleveldb.a; cd $$PWD/src/leveldb ; $(MAKE) cl
     DEFINES += HAVE_BUILD_INFO
 }
 
-contains(USE_O3, 1) {
-    message(Building O3 optimization flag)
-    QMAKE_CXXFLAGS_RELEASE -= -O2
-    QMAKE_CFLAGS_RELEASE -= -O2
-    QMAKE_CXXFLAGS += -O3
-    QMAKE_CFLAGS += -O3
-}
-
-*-g++-32 {
-    message("32 platform, adding -msse2 flag")
-
-    QMAKE_CXXFLAGS += -msse2
-    QMAKE_CFLAGS += -msse2
-}
-
-QMAKE_CXXFLAGS_WARN_ON = -fdiagnostics-show-option -Wall -Wextra -Wno-ignored-qualifiers -Wformat -Wformat-security -Wno-unused-parameter -Wstack-protector
+QMAKE_CXXFLAGS += -msse2
+QMAKE_CFLAGS += -msse2
+QMAKE_CXXFLAGS_WARN_ON = -fdiagnostics-show-option -Wall -Wextra -Wformat -Wformat-security -Wno-unused-parameter -Wstack-protector
 
 # Input
 DEPENDPATH += src src/json src/qt
@@ -141,8 +121,6 @@ HEADERS += src/qt/bitcoingui.h \
     src/qt/transactiontablemodel.h \
     src/qt/addresstablemodel.h \
     src/qt/optionsdialog.h \
-    src/qt/coincontroldialog.h \
-    src/qt/coincontroltreewidget.h \
     src/qt/sendcoinsdialog.h \
     src/qt/addressbookpage.h \
     src/qt/signverifymessagedialog.h \
@@ -155,32 +133,18 @@ HEADERS += src/qt/bitcoingui.h \
     src/bignum.h \
     src/checkpoints.h \
     src/compat.h \
-    src/coincontrol.h \
     src/sync.h \
     src/util.h \
     src/uint256.h \
     src/kernel.h \
-    src/scrypt.h \
+    src/scrypt_mine.h \
     src/pbkdf2.h \
-    src/zerocoin/Accumulator.h \
-    src/zerocoin/AccumulatorProofOfKnowledge.h \
-    src/zerocoin/Coin.h \
-    src/zerocoin/CoinSpend.h \
-    src/zerocoin/Commitment.h \
-    src/zerocoin/ParamGeneration.h \
-    src/zerocoin/Params.h \
-    src/zerocoin/SerialNumberSignatureOfKnowledge.h \
-    src/zerocoin/SpendMetaData.h \
-    src/zerocoin/ZeroTest.h \
-    src/zerocoin/Zerocoin.h \
     src/serialize.h \
     src/strlcpy.h \
     src/main.h \
-    src/miner.h \
     src/net.h \
     src/key.h \
     src/db.h \
-    src/txdb.h \
     src/walletdb.h \
     src/script.h \
     src/init.h \
@@ -218,6 +182,9 @@ HEADERS += src/qt/bitcoingui.h \
     src/qt/bitcoinunits.h \
     src/qt/qvaluecombobox.h \
     src/qt/askpassphrasedialog.h \
+    src/qt/coincontroldialog.h \
+    src/qt/coincontroltreewidget.h \
+    src/coincontrol.h \
     src/protocol.h \
     src/qt/notificator.h \
     src/qt/qtipcserver.h \
@@ -226,16 +193,13 @@ HEADERS += src/qt/bitcoingui.h \
     src/qt/rpcconsole.h \
     src/version.h \
     src/netbase.h \
-    src/clientversion.h \
-    src/threadsafety.h
+    src/clientversion.h
 
 SOURCES += src/qt/bitcoin.cpp src/qt/bitcoingui.cpp \
     src/qt/transactiontablemodel.cpp \
     src/qt/addresstablemodel.cpp \
     src/qt/optionsdialog.cpp \
     src/qt/sendcoinsdialog.cpp \
-    src/qt/coincontroldialog.cpp \
-    src/qt/coincontroltreewidget.cpp \
     src/qt/addressbookpage.cpp \
     src/qt/signverifymessagedialog.cpp \
     src/qt/aboutdialog.cpp \
@@ -249,7 +213,6 @@ SOURCES += src/qt/bitcoin.cpp src/qt/bitcoingui.cpp \
     src/key.cpp \
     src/script.cpp \
     src/main.cpp \
-    src/miner.cpp \
     src/init.cpp \
     src/net.cpp \
     src/irc.cpp \
@@ -290,23 +253,14 @@ SOURCES += src/qt/bitcoin.cpp src/qt/bitcoingui.cpp \
     src/qt/notificator.cpp \
     src/qt/qtipcserver.cpp \
     src/qt/rpcconsole.cpp \
+    src/qt/coincontroldialog.cpp \
+    src/qt/coincontroltreewidget.cpp \
     src/noui.cpp \
     src/kernel.cpp \
-    src/scrypt-arm.S \
     src/scrypt-x86.S \
     src/scrypt-x86_64.S \
-    src/scrypt.cpp \
-    src/pbkdf2.cpp \
-    src/zerocoin/Accumulator.cpp \
-    src/zerocoin/AccumulatorProofOfKnowledge.cpp \
-    src/zerocoin/Coin.cpp \
-    src/zerocoin/CoinSpend.cpp \
-    src/zerocoin/Commitment.cpp \
-    src/zerocoin/ParamGeneration.cpp \
-    src/zerocoin/Params.cpp \
-    src/zerocoin/SerialNumberSignatureOfKnowledge.cpp \
-    src/zerocoin/SpendMetaData.cpp \
-    src/zerocoin/ZeroTest.cpp
+    src/scrypt_mine.cpp \
+    src/pbkdf2.cpp
 
 RESOURCES += \
     src/qt/bitcoin.qrc
@@ -331,6 +285,16 @@ SOURCES += src/qt/qrcodedialog.cpp
 FORMS += src/qt/forms/qrcodedialog.ui
 }
 
+contains(BITCOIN_QT_TEST, 1) {
+SOURCES += src/qt/test/test_main.cpp \
+    src/qt/test/uritests.cpp
+HEADERS += src/qt/test/uritests.h
+DEPENDPATH += src/qt/test
+QT += testlib
+TARGET = WinCoin-qt_test
+DEFINES += BITCOIN_QT_TEST
+}
+
 CODECFORTR = UTF-8
 
 # for lrelease/lupdate
@@ -352,17 +316,16 @@ QMAKE_EXTRA_COMPILERS += TSQM
 
 # "Other files" to show in Qt Creator
 OTHER_FILES += \
-    doc/*.rst doc/*.txt doc/README README.md res/bitcoin-qt.rc
+    doc/*.rst doc/*.txt doc/README README.md res/bitcoin-qt.rc src/test/*.cpp src/test/*.h src/qt/test/*.cpp src/qt/test/*.h
 
 # platform specific defaults, if not overridden on command line
 isEmpty(BOOST_LIB_SUFFIX) {
     macx:BOOST_LIB_SUFFIX = -mt
-    windows:BOOST_LIB_SUFFIX = -mt
+    windows:BOOST_LIB_SUFFIX = -mgw44-mt-s-1_50
 }
 
 isEmpty(BOOST_THREAD_LIB_SUFFIX) {
-    win32:BOOST_THREAD_LIB_SUFFIX = _win32$$BOOST_LIB_SUFFIX
-    else:BOOST_THREAD_LIB_SUFFIX = $$BOOST_LIB_SUFFIX
+    BOOST_THREAD_LIB_SUFFIX = $$BOOST_LIB_SUFFIX
 }
 
 isEmpty(BDB_LIB_PATH) {
@@ -395,16 +358,21 @@ windows:!contains(MINGW_THREAD_BUGFIX, 0) {
     # it is prepended to QMAKE_LIBS_QT_ENTRY.
     # It can be turned off with MINGW_THREAD_BUGFIX=0, just in case it causes
     # any problems on some untested qmake profile now or in the future.
-    DEFINES += _MT BOOST_THREAD_PROVIDES_GENERIC_SHARED_MUTEX_ON_WIN
+    DEFINES += _MT
     QMAKE_LIBS_QT_ENTRY = -lmingwthrd $$QMAKE_LIBS_QT_ENTRY
+}
+
+!windows:!macx {
+    DEFINES += LINUX
+    LIBS += -lrt
 }
 
 macx:HEADERS += src/qt/macdockiconhandler.h
 macx:OBJECTIVE_SOURCES += src/qt/macdockiconhandler.mm
 macx:LIBS += -framework Foundation -framework ApplicationServices -framework AppKit
 macx:DEFINES += MAC_OSX MSG_NOSIGNAL=0
-macx:ICON = src/qt/res/icons/bitcoin.icns
-macx:TARGET = "Wincoin-Qt"
+macx:ICON = src/qt/res/icons/WinCoin.icns
+macx:TARGET = "WinCoin-Qt"
 macx:QMAKE_CFLAGS_THREAD += -pthread
 macx:QMAKE_LFLAGS_THREAD += -pthread
 macx:QMAKE_CXXFLAGS_THREAD += -pthread
@@ -423,11 +391,6 @@ contains(RELEASE, 1) {
         # Linux: turn dynamic linking back on for c/c++ runtime libraries
         LIBS += -Wl,-Bdynamic
     }
-}
-
-!windows:!macx {
-    DEFINES += LINUX
-    LIBS += -lrt -ldl
 }
 
 system($$QMAKE_LRELEASE -silent $$_PRO_FILE_)

@@ -10,8 +10,14 @@
 #include <QDoubleValidator>
 #include <QFont>
 #include <QLineEdit>
-#include <QUrl>
-#include <QTextDocument> // For Qt::escape
+
+ #if QT_VERSION >= 0x050000
+ #include <QUrlQuery>
+ #else
+ #include <QUrl>
+ #include <QTextDocument> // For Qt::escape
+ #endif
+ #include <QTextDocument> // for Qt::mightBeRichText
 #include <QAbstractItemView>
 #include <QApplication>
 #include <QClipboard>
@@ -55,11 +61,7 @@ QString dateTimeStr(qint64 nTime)
 QFont bitcoinAddressFont()
 {
     QFont font("Monospace");
-#if QT_VERSION >= 0x040800
-    font.setStyleHint(QFont::Monospace);
-#else
     font.setStyleHint(QFont::TypeWriter);
-#endif
     return font;
 }
 
@@ -81,14 +83,20 @@ void setupAmountWidget(QLineEdit *widget, QWidget *parent)
 
 bool parseBitcoinURI(const QUrl &uri, SendCoinsRecipient *out)
 {
-    // NovaCoin: check prefix
-    if(uri.scheme() != QString("wincoin"))
+    if(uri.scheme() != QString("bitcoin"))
         return false;
 
     SendCoinsRecipient rv;
     rv.address = uri.path();
     rv.amount = 0;
-    QList<QPair<QString, QString> > items = uri.queryItems();
+ 
+ #if QT_VERSION < 0x050000
+     QList<QPair<QString, QString> > items = uri.queryItems();
+ #else
+     QUrlQuery uriQuery(uri);
+     QList<QPair<QString, QString> > items = uriQuery.queryItems();
+ #endif
+
     for (QList<QPair<QString, QString> >::iterator i = items.begin(); i != items.end(); i++)
     {
         bool fShouldReturnFalse = false;
@@ -127,13 +135,13 @@ bool parseBitcoinURI(const QUrl &uri, SendCoinsRecipient *out)
 
 bool parseBitcoinURI(QString uri, SendCoinsRecipient *out)
 {
-    // Convert wincoin:// to wincoin:
+    // Convert bitcoin:// to bitcoin:
     //
     //    Cannot handle this later, because bitcoin:// will cause Qt to see the part after // as host,
     //    which will lower-case it (and thus invalidate the address).
-    if(uri.startsWith("wincoin://"))
+    if(uri.startsWith("bitcoin://"))
     {
-        uri.replace(0, 12, "wincoin:");
+        uri.replace(0, 10, "bitcoin:");
     }
     QUrl uriInstance(uri);
     return parseBitcoinURI(uriInstance, out);
@@ -141,7 +149,12 @@ bool parseBitcoinURI(QString uri, SendCoinsRecipient *out)
 
 QString HtmlEscape(const QString& str, bool fMultiLine)
 {
-    QString escaped = Qt::escape(str);
+ 
+ #if QT_VERSION < 0x050000
+     QString escaped = Qt::escape(str);
+ #else
+     QString escaped = str.toHtmlEscaped();
+ #endif
     if(fMultiLine)
     {
         escaped = escaped.replace("\n", "<br>\n");
@@ -176,7 +189,12 @@ QString getSaveFileName(QWidget *parent, const QString &caption,
     QString myDir;
     if(dir.isEmpty()) // Default to user documents location
     {
-        myDir = QDesktopServices::storageLocation(QDesktopServices::DocumentsLocation);
+        //myDir = QDesktopServices::storageLocation(QDesktopServices::DocumentsLocation);
+ #if QT_VERSION < 0x050000
+         myDir = QDesktopServices::storageLocation(QDesktopServices::DocumentsLocation);
+ #else
+         myDir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+ #endif
     }
     else
     {
@@ -262,11 +280,11 @@ bool ToolTipToRichTextFilter::eventFilter(QObject *obj, QEvent *evt)
     {
         QWidget *widget = static_cast<QWidget*>(obj);
         QString tooltip = widget->toolTip();
-        if(tooltip.size() > size_threshold && !tooltip.startsWith("<qt>") && !Qt::mightBeRichText(tooltip))
+        if(tooltip.size() > size_threshold && !tooltip.startsWith("<qt/>") && !Qt::mightBeRichText(tooltip))
         {
             // Prefix <qt/> to make sure Qt detects this as rich text
             // Escape the current message as HTML and replace \n by <br>
-            tooltip = "<qt>" + HtmlEscape(tooltip, true) + "<qt/>";
+            tooltip = "<qt/>" + HtmlEscape(tooltip, true);
             widget->setToolTip(tooltip);
             return true;
         }
@@ -277,7 +295,7 @@ bool ToolTipToRichTextFilter::eventFilter(QObject *obj, QEvent *evt)
 #ifdef WIN32
 boost::filesystem::path static StartupShortcutPath()
 {
-    return GetSpecialFolderPath(CSIDL_STARTUP) / "Wincoin.lnk";
+    return GetSpecialFolderPath(CSIDL_STARTUP) / "WinCoin.lnk";
 }
 
 bool GetStartOnSystemStartup()
@@ -341,7 +359,7 @@ bool SetStartOnSystemStartup(bool fAutoStart)
     return true;
 }
 
-#elif defined(Q_OS_LINUX)
+#elif defined(LINUX)
 
 // Follow the Desktop Application Autostart Spec:
 //  http://standards.freedesktop.org/autostart-spec/autostart-spec-latest.html
@@ -359,7 +377,7 @@ boost::filesystem::path static GetAutostartDir()
 
 boost::filesystem::path static GetAutostartFilePath()
 {
-    return GetAutostartDir() / "wincoin.desktop";
+    return GetAutostartDir() / "WinCoin.desktop";
 }
 
 bool GetStartOnSystemStartup()
@@ -400,7 +418,7 @@ bool SetStartOnSystemStartup(bool fAutoStart)
         // Write a bitcoin.desktop file to the autostart directory:
         optionFile << "[Desktop Entry]\n";
         optionFile << "Type=Application\n";
-        optionFile << "Name=Wincoin\n";
+        optionFile << "Name=WinCoin\n";
         optionFile << "Exec=" << pszExePath << " -min\n";
         optionFile << "Terminal=false\n";
         optionFile << "Hidden=false\n";
@@ -421,10 +439,10 @@ bool SetStartOnSystemStartup(bool fAutoStart) { return false; }
 HelpMessageBox::HelpMessageBox(QWidget *parent) :
     QMessageBox(parent)
 {
-    header = tr("Wincoin-Qt") + " " + tr("version") + " " +
+    header = tr("WinCoin-Qt") + " " + tr("version") + " " +
         QString::fromStdString(FormatFullVersion()) + "\n\n" +
         tr("Usage:") + "\n" +
-        "  wincoin-qt [" + tr("command-line options") + "]                     " + "\n";
+        "  WinCoin-qt [" + tr("command-line options") + "]                     " + "\n";
 
     coreOptions = QString::fromStdString(HelpMessage());
 
@@ -433,7 +451,7 @@ HelpMessageBox::HelpMessageBox(QWidget *parent) :
         "  -min                   " + tr("Start minimized") + "\n" +
         "  -splash                " + tr("Show splash screen on startup (default: 1)") + "\n";
 
-    setWindowTitle(tr("Wincoin-Qt"));
+    setWindowTitle(tr("WinCoin-Qt"));
     setTextFormat(Qt::PlainText);
     // setMinimumWidth is ignored for QMessageBox so put in non-breaking spaces to make it wider.
     setText(header + QString(QChar(0x2003)).repeated(50));

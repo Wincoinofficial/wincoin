@@ -74,6 +74,7 @@ TransactionView::TransactionView(QWidget *parent) :
     typeWidget->addItem(tr("Sent to"), TransactionFilterProxy::TYPE(TransactionRecord::SendToAddress) |
                                   TransactionFilterProxy::TYPE(TransactionRecord::SendToOther));
     typeWidget->addItem(tr("To yourself"), TransactionFilterProxy::TYPE(TransactionRecord::SendToSelf));
+    typeWidget->addItem(tr("Mint by stake"), TransactionFilterProxy::TYPE(TransactionRecord::StakeMint));
     typeWidget->addItem(tr("Mined"), TransactionFilterProxy::TYPE(TransactionRecord::Generated));
     typeWidget->addItem(tr("Other"), TransactionFilterProxy::TYPE(TransactionRecord::Other));
 
@@ -99,8 +100,6 @@ TransactionView::TransactionView(QWidget *parent) :
     amountWidget->setValidator(new QDoubleValidator(0, 1e20, 8, this));
     hlayout->addWidget(amountWidget);
 
-
-
     QVBoxLayout *vlayout = new QVBoxLayout(this);
     vlayout->setContentsMargins(0,0,0,0);
     vlayout->setSpacing(0);
@@ -122,17 +121,12 @@ TransactionView::TransactionView(QWidget *parent) :
     view->setTabKeyNavigation(false);
     view->setContextMenuPolicy(Qt::CustomContextMenu);
 
-    // Add border
-    view->setShowGrid(true);
-
-
     transactionView = view;
 
     // Actions
     QAction *copyAddressAction = new QAction(tr("Copy address"), this);
     QAction *copyLabelAction = new QAction(tr("Copy label"), this);
     QAction *copyAmountAction = new QAction(tr("Copy amount"), this);
-    QAction *copyTxIDAction = new QAction(tr("Copy transaction ID"), this);
     QAction *editLabelAction = new QAction(tr("Edit label"), this);
     QAction *showDetailsAction = new QAction(tr("Show transaction details"), this);
 
@@ -140,7 +134,6 @@ TransactionView::TransactionView(QWidget *parent) :
     contextMenu->addAction(copyAddressAction);
     contextMenu->addAction(copyLabelAction);
     contextMenu->addAction(copyAmountAction);
-    contextMenu->addAction(copyTxIDAction);
     contextMenu->addAction(editLabelAction);
     contextMenu->addAction(showDetailsAction);
 
@@ -156,7 +149,6 @@ TransactionView::TransactionView(QWidget *parent) :
     connect(copyAddressAction, SIGNAL(triggered()), this, SLOT(copyAddress()));
     connect(copyLabelAction, SIGNAL(triggered()), this, SLOT(copyLabel()));
     connect(copyAmountAction, SIGNAL(triggered()), this, SLOT(copyAmount()));
-    connect(copyTxIDAction, SIGNAL(triggered()), this, SLOT(copyTxID()));
     connect(editLabelAction, SIGNAL(triggered()), this, SLOT(editLabel()));
     connect(showDetailsAction, SIGNAL(triggered()), this, SLOT(showDetails()));
 }
@@ -176,13 +168,12 @@ void TransactionView::setModel(WalletModel *model)
 
         transactionView->setModel(transactionProxyModel);
         transactionView->setAlternatingRowColors(true);
-        transactionView->setShowGrid(true);
         transactionView->setSelectionBehavior(QAbstractItemView::SelectRows);
         transactionView->setSelectionMode(QAbstractItemView::ExtendedSelection);
         transactionView->setSortingEnabled(true);
+//        transactionView->sortByColumn(TransactionTableModel::Status, Qt::DescendingOrder);
         transactionView->sortByColumn(TransactionTableModel::Date, Qt::DescendingOrder);
         transactionView->verticalHeader()->hide();
-        transactionView->setStyleSheet("QHeaderView::section { border: 1px solid gray;}");
 
         transactionView->horizontalHeader()->resizeSection(
                 TransactionTableModel::Status, 23);
@@ -190,12 +181,13 @@ void TransactionView::setModel(WalletModel *model)
                 TransactionTableModel::Date, 120);
         transactionView->horizontalHeader()->resizeSection(
                 TransactionTableModel::Type, 120);
-        transactionView->horizontalHeader()->setResizeMode(
-                TransactionTableModel::ToAddress, QHeaderView::Stretch);
+#if QT_VERSION < 0x050000
+         transactionView->horizontalHeader()->setResizeMode(TransactionTableModel::ToAddress, QHeaderView::Stretch);
+#else
+        transactionView->horizontalHeader()->setSectionResizeMode(TransactionTableModel::ToAddress, QHeaderView::Stretch);
+#endif
         transactionView->horizontalHeader()->resizeSection(
                 TransactionTableModel::Amount, 100);
-
-
     }
 }
 
@@ -328,11 +320,6 @@ void TransactionView::copyLabel()
 void TransactionView::copyAmount()
 {
     GUIUtil::copyEntryData(transactionView, 0, TransactionTableModel::FormattedAmountRole);
-}
-
-void TransactionView::copyTxID()
-{
-    GUIUtil::copyEntryData(transactionView, 0, TransactionTableModel::TxIDRole);
 }
 
 void TransactionView::editLabel()

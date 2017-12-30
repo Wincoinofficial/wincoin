@@ -2,9 +2,6 @@
 // Alert system
 //
 
-#include <algorithm>
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/algorithm/string/replace.hpp>
 #include <boost/foreach.hpp>
 #include <map>
 
@@ -19,13 +16,13 @@ using namespace std;
 map<uint256, CAlert> mapAlerts;
 CCriticalSection cs_mapAlerts;
 
-static const char* pszMainKey = "04e6bc2b49dd51d6585fca7be198191ddcbaf17d418a3cf60d56185a1fb4867a65abc76b1c609c0bad9f12694a98b628f4117bedace0f335d10ecb27863220e802";
+static const char* pszMainKey = "04b8d49de838594c2289037043e5330f12f4cb98f0a2f0cda90a2a957c3358c95480bb6db13fd5a50368c1f24096495eb473be801e5c919b0668a2f7acf74ed291";
 
 // TestNet alerts pubKey
-static const char* pszTestKey = "048908c3f42d0993a52dd1d87e7c0bba1493aadc44fae7a4b3b7f743b8adcc09e2cc4af8c12523a819f0b79373e5e4e8f43ae2537b922c7bde121a2decd7519074";
+static const char* pszTestKey = "0471dc165db490094d35cde15b1f5d755fa6ad6f2b5ed0f340e3f17f57389c3c2af113a8cbcc885bde73305a553b5640c83021128008ddf882e856336269080496";
 
 // TestNet alerts private key
-// "308201130201010420b665cff1884e53da26376fd1b433812c9a5a8a4d5221533b15b9629789bb7e42a081a53081a2020101302c06072a8648ce3d0101022100fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f300604010004010704410479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8022100fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141020101a144034200048908c3f42d0993a52dd1d87e7c0bba1493aadc44fae7a4b3b7f743b8adcc09e2cc4af8c12523a819f0b79373e5e4e8f43ae2537b922c7bde121a2decd7519074"
+// "308201130201010420b665cff1884e53da26376fd1b433812c9a5a8a4d5221533b15b9629789bb7e42a081a53081a2020101302c06072a8648ce3d0101022100fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f300604010004010704410479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8022100fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141020101a1440342000471dc165db490094d35cde15b1f5d755fa6ad6f2b5ed0f340e3f17f57389c3c2af113a8cbcc885bde73305a553b5640c83021128008ddf882e856336269080496"
 
 void CUnsignedAlert::SetNull()
 {
@@ -56,8 +53,8 @@ std::string CUnsignedAlert::ToString() const
     return strprintf(
         "CAlert(\n"
         "    nVersion     = %d\n"
-        "    nRelayUntil  = %"PRId64"\n"
-        "    nExpiration  = %"PRId64"\n"
+        "    nRelayUntil  = %"PRI64d"\n"
+        "    nExpiration  = %"PRI64d"\n"
         "    nID          = %d\n"
         "    nCancel      = %d\n"
         "    setCancel    = %s\n"
@@ -173,7 +170,7 @@ CAlert CAlert::getAlertByHash(const uint256 &hash)
     return retval;
 }
 
-bool CAlert::ProcessAlert(bool fThread)
+bool CAlert::ProcessAlert()
 {
     if (!CheckSignature())
         return false;
@@ -211,13 +208,13 @@ bool CAlert::ProcessAlert(bool fThread)
             if (Cancels(alert))
             {
                 printf("cancelling alert %d\n", alert.nID);
-                uiInterface.NotifyAlertChanged((*mi).first, CT_DELETED);
+                uiInterface.NotifyAlertChanged((*mi).first, CT_DELEWC);
                 mapAlerts.erase(mi++);
             }
             else if (!alert.IsInEffect())
             {
                 printf("expiring alert %d\n", alert.nID);
-                uiInterface.NotifyAlertChanged((*mi).first, CT_DELETED);
+                uiInterface.NotifyAlertChanged((*mi).first, CT_DELEWC);
                 mapAlerts.erase(mi++);
             }
             else
@@ -237,35 +234,9 @@ bool CAlert::ProcessAlert(bool fThread)
 
         // Add to mapAlerts
         mapAlerts.insert(make_pair(GetHash(), *this));
-        // Notify UI and -alertnotify if it applies to me
+        // Notify UI if it applies to me
         if(AppliesToMe())
-        {
             uiInterface.NotifyAlertChanged(GetHash(), CT_NEW);
-            std::string strCmd = GetArg("-alertnotify", "");
-            if (!strCmd.empty())
-            {
-                // Alert text should be plain ascii coming from a trusted source, but to
-                // be safe we first strip anything not in safeChars, then add single quotes around
-                // the whole string before passing it to the shell:
-                std::string singleQuote("'");
-                // safeChars chosen to allow simple messages/URLs/email addresses, but avoid anything
-                // even possibly remotely dangerous like & or >
-                std::string safeChars("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890 .,;_/:?@");
-                std::string safeStatus;
-                for (std::string::size_type i = 0; i < strStatusBar.size(); i++)
-                {
-                    if (safeChars.find(strStatusBar[i]) != std::string::npos)
-                        safeStatus.push_back(strStatusBar[i]);
-                }
-                safeStatus = singleQuote+safeStatus+singleQuote;
-                boost::replace_all(strCmd, "%s", safeStatus);
-
-                if (fThread)
-                    boost::thread t(runCommand, strCmd); // thread runs free
-                else
-                    runCommand(strCmd);
-            }
-        }
     }
 
     printf("accepted alert %d, AppliesToMe()=%d\n", nID, AppliesToMe());

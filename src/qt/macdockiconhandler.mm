@@ -1,9 +1,9 @@
 #include "macdockiconhandler.h"
 
-#include <QImageWriter>
 #include <QMenu>
-#include <QTemporaryFile>
 #include <QWidget>
+#include <QTemporaryFile>
+#include <QImageWriter>
 
 #undef slots
 #include <Cocoa/Cocoa.h>

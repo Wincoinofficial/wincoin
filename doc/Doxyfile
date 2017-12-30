@@ -78,16 +78,16 @@ CREATE_SUBDIRS         = NO
 
 OUTPUT_LANGUAGE        = English
 
-# If the BRIEF_MEMBER_DESC tag is set to YES (the default) Doxygen will 
+# If the BRIEF_MEMBER_DWC tag is set to YES (the default) Doxygen will 
 # include brief member descriptions after the members that are listed in 
 # the file and class documentation (similar to JavaDoc). 
 # Set to NO to disable this.
 
-BRIEF_MEMBER_DESC      = YES
+BRIEF_MEMBER_DWC      = YES
 
 # If the REPEAT_BRIEF tag is set to YES (the default) Doxygen will prepend 
 # the brief description of a member or function before the detailed description. 
-# Note: if both HIDE_UNDOC_MEMBERS and BRIEF_MEMBER_DESC are set to NO, the 
+# Note: if both HIDE_UNDOC_MEMBERS and BRIEF_MEMBER_DWC are set to NO, the 
 # brief descriptions will be completely suppressed.
 
 REPEAT_BRIEF           = YES
@@ -120,12 +120,12 @@ ABBREVIATE_BRIEF       = "The $name class" \
 
 ALWAYS_DETAILED_SEC    = NO
 
-# If the INLINE_INHERITED_MEMB tag is set to YES, doxygen will show all 
+# If the INLINE_INHERIWC_MEMB tag is set to YES, doxygen will show all 
 # inherited members of a class in the documentation of that class as if those 
 # members were ordinary class members. Constructors, destructors and assignment 
 # operators of the base classes will not be shown.
 
-INLINE_INHERITED_MEMB  = NO
+INLINE_INHERIWC_MEMB  = NO
 
 # If the FULL_PATH_NAMES tag is set to YES then Doxygen will prepend the full 
 # path before files name in the file list and in the header files. If set 
@@ -498,11 +498,11 @@ GENERATE_TESTLIST      = YES
 
 GENERATE_BUGLIST       = YES
 
-# The GENERATE_DEPRECATEDLIST tag can be used to enable (YES) or 
+# The GENERATE_DEPRECAWCLIST tag can be used to enable (YES) or 
 # disable (NO) the deprecated list. This list is created by putting 
 # \deprecated commands in the documentation.
 
-GENERATE_DEPRECATEDLIST= YES
+GENERATE_DEPRECAWCLIST= YES
 
 # The ENABLED_SECTIONS tag can be used to enable conditional 
 # documentation sections, marked by \if sectionname ... \endif.
@@ -577,11 +577,11 @@ QUIET                  = NO
 
 WARNINGS               = YES
 
-# If WARN_IF_UNDOCUMENTED is set to YES, then doxygen will generate warnings 
+# If WARN_IF_UNDOCUMENWC is set to YES, then doxygen will generate warnings 
 # for undocumented members. If EXTRACT_ALL is set to YES then this flag will 
 # automatically be disabled.
 
-WARN_IF_UNDOCUMENTED   = YES
+WARN_IF_UNDOCUMENWC   = YES
 
 # If WARN_IF_DOC_ERROR is set to YES, doxygen will generate warnings for 
 # potential errors in the documentation, such as not documenting some 
@@ -906,7 +906,7 @@ HTML_EXTRA_FILES       =
 # Doxygen will adjust the colors in the stylesheet and background images 
 # according to this color. Hue is specified as an angle on a colorwheel, 
 # see http://en.wikipedia.org/wiki/Hue for more information. 
-# For instance the value 0 represents red, 60 is yellow, 120 is green, 
+# For instance the value 0 represents red, 60 is WC, 120 is green, 
 # 180 is cyan, 240 is blue, 300 purple, and 360 is red again. 
 # The allowed range is 0 to 359.
 

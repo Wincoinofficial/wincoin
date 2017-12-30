@@ -14,12 +14,11 @@
 #include "netbase.h"
 #include <string>
 #include "uint256.h"
-#include "parameters.h"
 
 extern bool fTestNet;
 static inline unsigned short GetDefaultPort(const bool testnet = fTestNet)
 {
-    return testnet ? 19452 : PORT;
+        return testnet ? 11610 : 11610;
 }
 
 
@@ -57,8 +56,7 @@ class CMessageHeader
             CHECKSUM_SIZE=sizeof(int),
 
             MESSAGE_SIZE_OFFSET=MESSAGE_START_SIZE+COMMAND_SIZE,
-            CHECKSUM_OFFSET=MESSAGE_SIZE_OFFSET+MESSAGE_SIZE_SIZE,
-            HEADER_SIZE=MESSAGE_START_SIZE+COMMAND_SIZE+MESSAGE_SIZE_SIZE+CHECKSUM_SIZE
+            CHECKSUM_OFFSET=MESSAGE_SIZE_OFFSET+MESSAGE_SIZE_SIZE
         };
         char pchMessageStart[MESSAGE_START_SIZE];
         char pchCommand[COMMAND_SIZE];
@@ -77,7 +75,7 @@ class CAddress : public CService
 {
     public:
         CAddress();
-        explicit CAddress(CService ipIn, uint64_t nServicesIn=NODE_NETWORK);
+        explicit CAddress(CService ipIn, uint64 nServicesIn=NODE_NETWORK);
 
         void Init();
 
@@ -100,13 +98,13 @@ class CAddress : public CService
 
     // TODO: make private (improves encapsulation)
     public:
-        uint64_t nServices;
+        uint64 nServices;
 
         // disk and network only
         unsigned int nTime;
 
         // memory only
-        int64_t nLastTry;
+        int64 nLastTry;
 };
 
 /** inv message data */

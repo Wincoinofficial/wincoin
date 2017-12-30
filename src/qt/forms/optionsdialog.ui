@@ -13,9 +13,6 @@
   <property name="windowTitle">
    <string>Options</string>
   </property>
-  <property name="styleSheet">
-   <string notr="true">background-image: url(:/images/2s);</string>
-  </property>
   <property name="modal">
    <bool>true</bool>
   </property>
@@ -47,7 +44,7 @@
         </widget>
        </item>
        <item>
-        <layout class="QHBoxLayout" name="horizontalLayoutFee">
+        <layout class="QHBoxLayout" name="horizontalLayout_Main">
          <item>
           <widget class="QLabel" name="transactionFeeLabel">
            <property name="text">
@@ -65,53 +62,7 @@
           <widget class="BitcoinAmountField" name="transactionFee"/>
          </item>
          <item>
-          <spacer name="horizontalSpacerFee">
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>40</width>
-             <height>20</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
-        </layout>
-       </item>
-       <item>
-        <widget class="QLabel" name="reserveBalanceInfoLabel">
-         <property name="text">
-          <string>Reserved amount does not participate in staking and is therefore spendable at any time.</string>
-         </property>
-         <property name="textFormat">
-          <enum>Qt::PlainText</enum>
-         </property>
-         <property name="wordWrap">
-          <bool>true</bool>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <layout class="QHBoxLayout" name="horizontalLayoutReserveBalance">
-         <item>
-          <widget class="QLabel" name="reserveBalanceLabel">
-           <property name="text">
-            <string>Reserve</string>
-           </property>
-           <property name="textFormat">
-            <enum>Qt::PlainText</enum>
-           </property>
-           <property name="buddy">
-            <cstring>reserveBalance</cstring>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="BitcoinAmountField" name="reserveBalance"/>
-         </item>
-         <item>
-          <spacer name="horizontalSpacerReserveBalance">
+          <spacer name="horizontalSpacer_Main">
            <property name="orientation">
             <enum>Qt::Horizontal</enum>
            </property>
@@ -128,10 +79,20 @@
        <item>
         <widget class="QCheckBox" name="bitcoinAtStartup">
          <property name="toolTip">
-          <string>Automatically start Wincoin after logging in to the system.</string>
+          <string>Automatically start WinCoin after logging in to the system.</string>
          </property>
          <property name="text">
-          <string>&amp;Start Wincoin on system login</string>
+          <string>&amp;Start WinCoin on system login</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QCheckBox" name="detachDatabases">
+         <property name="toolTip">
+          <string>Detach block and address databases at shutdown. This means they can be moved to another data directory, but it slows down shutdown. The wallet is always detached.</string>
+         </property>
+         <property name="text">
+          <string>&amp;Detach databases at shutdown</string>
          </property>
         </widget>
        </item>
@@ -158,7 +119,7 @@
        <item>
         <widget class="QCheckBox" name="mapPortUpnp">
          <property name="toolTip">
-          <string>Automatically open the Wincoin client port on the router. This only works when your router supports UPnP and it is enabled.</string>
+          <string>Automatically open the WinCoin client port on the router. This only works when your router supports UPnP and it is enabled.</string>
          </property>
          <property name="text">
           <string>Map port using &amp;UPnP</string>
@@ -168,7 +129,7 @@
        <item>
         <widget class="QCheckBox" name="connectSocks">
          <property name="toolTip">
-          <string>Connect to the Wincoin network through a SOCKS proxy (e.g. when connecting through Tor).</string>
+          <string>Connect to the WinCoin network through a SOCKS proxy (e.g. when connecting through Tor).</string>
          </property>
          <property name="text">
           <string>&amp;Connect through SOCKS proxy:</string>
@@ -342,7 +303,7 @@
          <item>
           <widget class="QValueComboBox" name="lang">
            <property name="toolTip">
-            <string>The user interface language can be set here. This setting will take effect after restarting Wincoin.</string>
+            <string>The user interface language can be set here. This setting will take effect after restarting WinCoin.</string>
            </property>
           </widget>
          </item>
@@ -375,7 +336,7 @@
        <item>
         <widget class="QCheckBox" name="displayAddresses">
          <property name="toolTip">
-          <string>Whether to show Wincoin addresses in the transaction list or not.</string>
+          <string>Whether to show WinCoin addresses in the transaction list.</string>
          </property>
          <property name="text">
           <string>&amp;Display addresses in transaction list</string>
@@ -492,7 +453,6 @@
    <class>BitcoinAmountField</class>
    <extends>QSpinBox</extends>
    <header>bitcoinamountfield.h</header>
-   <container>1</container>
   </customwidget>
   <customwidget>
    <class>QValueComboBox</class>

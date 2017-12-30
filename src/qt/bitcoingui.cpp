@@ -25,7 +25,7 @@
 #include "notificator.h"
 #include "guiutil.h"
 #include "rpcconsole.h"
-#include "wallet.h"
+
 
 #ifdef Q_OS_MAC
 #include "macdockiconhandler.h"
@@ -45,7 +45,6 @@
 #include <QPushButton>
 #include <QLocale>
 #include <QMessageBox>
-#include <QMimeData>
 #include <QProgressBar>
 #include <QStackedWidget>
 #include <QDateTime>
@@ -54,14 +53,14 @@
 #include <QDesktopServices>
 #include <QTimer>
 #include <QDragEnterEvent>
-#include <QUrl>
+ #if QT_VERSION < 0x050000
+ #include <QUrl>
+ #endif
+  #include <QMimeData>
 #include <QStyle>
+ #include <QSettings>
 
 #include <iostream>
-
-extern CWallet* pwalletMain;
-extern int64_t nLastCoinStakeSearchInterval;
-double GetPoSKernelPS();
 
 BitcoinGUI::BitcoinGUI(QWidget *parent):
     QMainWindow(parent),
@@ -69,17 +68,13 @@ BitcoinGUI::BitcoinGUI(QWidget *parent):
     walletModel(0),
     encryptWalletAction(0),
     changePassphraseAction(0),
-    unlockWalletAction(0),
-    lockWalletAction(0),
-//    aboutQtAction(0),
+    aboutQtAction(0),
     trayIcon(0),
     notificator(0),
-    rpcConsole(0),
-    nWeight(0)
+    rpcConsole(0)
 {
-    setFixedSize(1020, 553);
-    setWindowTitle(tr("Wincoin") + " - " + tr("Wallet"));
-	qApp->setStyleSheet("QMainWindow { background-image:url(:images/bkg);border:none;font-family:'Open Sans,sans-serif'; }");
+    resize(850, 550);
+    setWindowTitle(tr("WinCoin") + " - " + tr("Wallet"));
 #ifndef Q_OS_MAC
     qApp->setWindowIcon(QIcon(":icons/bitcoin"));
     setWindowIcon(QIcon(":icons/bitcoin"));
@@ -133,31 +128,21 @@ BitcoinGUI::BitcoinGUI(QWidget *parent):
     // Status bar notification icons
     QFrame *frameBlocks = new QFrame();
     frameBlocks->setContentsMargins(0,0,0,0);
-    frameBlocks->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
+    frameBlocks->setMinimumWidth(56);
+    frameBlocks->setMaximumWidth(56);
     QHBoxLayout *frameBlocksLayout = new QHBoxLayout(frameBlocks);
     frameBlocksLayout->setContentsMargins(3,0,3,0);
     frameBlocksLayout->setSpacing(3);
     labelEncryptionIcon = new QLabel();
-    labelStakingIcon = new QLabel();
     labelConnectionsIcon = new QLabel();
     labelBlocksIcon = new QLabel();
     frameBlocksLayout->addStretch();
     frameBlocksLayout->addWidget(labelEncryptionIcon);
     frameBlocksLayout->addStretch();
-    frameBlocksLayout->addWidget(labelStakingIcon);
-    frameBlocksLayout->addStretch();
     frameBlocksLayout->addWidget(labelConnectionsIcon);
     frameBlocksLayout->addStretch();
     frameBlocksLayout->addWidget(labelBlocksIcon);
     frameBlocksLayout->addStretch();
-
-    if (GetBoolArg("-staking", true))
-    {
-        QTimer *timerStakingIcon = new QTimer(labelStakingIcon);
-        connect(timerStakingIcon, SIGNAL(timeout()), this, SLOT(updateStakingIcon()));
-        timerStakingIcon->start(30 * 1000);
-        updateStakingIcon();
-    }
 
     // Progress bar and label for blocks download
     progressBarLabel = new QLabel();
@@ -180,10 +165,13 @@ BitcoinGUI::BitcoinGUI(QWidget *parent):
     statusBar()->addPermanentWidget(frameBlocks);
 
     syncIconMovie = new QMovie(":/movies/update_spinner", "mng", this);
+	// this->setStyleSheet("background-color: #ceffee;");
 
     // Clicking on a transaction on the overview page simply sends you to transaction history page
     connect(overviewPage, SIGNAL(transactionClicked(QModelIndex)), this, SLOT(gotoHistoryPage()));
     connect(overviewPage, SIGNAL(transactionClicked(QModelIndex)), transactionView, SLOT(focusTransaction(QModelIndex)));
+
+    connect(sendCoinsPage, SIGNAL(sendCoinsClicked(QString)), overviewPage, SLOT(setButtonText(QString)));
 
     // Double-clicking on a transaction on the transaction history page shows details
     connect(transactionView, SIGNAL(doubleClicked(QModelIndex)), transactionView, SLOT(showDetails()));
@@ -219,7 +207,7 @@ void BitcoinGUI::createActions()
     tabGroup->addAction(overviewAction);
 
     sendCoinsAction = new QAction(QIcon(":/icons/send"), tr("&Send coins"), this);
-    sendCoinsAction->setToolTip(tr("Send coins to a Wincoin address"));
+    sendCoinsAction->setToolTip(tr("Send coins to a WinCoin address"));
     sendCoinsAction->setCheckable(true);
     sendCoinsAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_2));
     tabGroup->addAction(sendCoinsAction);
@@ -257,14 +245,14 @@ void BitcoinGUI::createActions()
     quitAction->setToolTip(tr("Quit application"));
     quitAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_Q));
     quitAction->setMenuRole(QAction::QuitRole);
-//    aboutAction = new QAction(QIcon(":/icons/bitcoin"), tr("&About Wincoin"), this);
-//    aboutAction->setToolTip(tr("Show information about Wincoin"));
-//    aboutAction->setMenuRole(QAction::AboutRole);
-//    aboutQtAction = new QAction(QIcon(":/trolltech/qmessagebox/images/qtlogo-64.png"), tr("About &Qt"), this);
-//    aboutQtAction->setToolTip(tr("Show information about Qt"));
-//    aboutQtAction->setMenuRole(QAction::AboutQtRole);
+    aboutAction = new QAction(QIcon(":/icons/bitcoin"), tr("&About WinCoin"), this);
+    aboutAction->setToolTip(tr("Show information about WinCoin"));
+    aboutAction->setMenuRole(QAction::AboutRole);
+    aboutQtAction = new QAction(QIcon(":/trolltech/qmessagebox/images/qtlogo-64.png"), tr("About &Qt"), this);
+    aboutQtAction->setToolTip(tr("Show information about Qt"));
+    aboutQtAction->setMenuRole(QAction::AboutQtRole);
     optionsAction = new QAction(QIcon(":/icons/options"), tr("&Options..."), this);
-    optionsAction->setToolTip(tr("Modify configuration options for Wincoin"));
+    optionsAction->setToolTip(tr("Modify configuration options for WinCoin"));
     optionsAction->setMenuRole(QAction::PreferencesRole);
     toggleHideAction = new QAction(QIcon(":/icons/bitcoin"), tr("&Show / Hide"), this);
     encryptWalletAction = new QAction(QIcon(":/icons/lock_closed"), tr("&Encrypt Wallet..."), this);
@@ -274,10 +262,6 @@ void BitcoinGUI::createActions()
     backupWalletAction->setToolTip(tr("Backup wallet to another location"));
     changePassphraseAction = new QAction(QIcon(":/icons/key"), tr("&Change Passphrase..."), this);
     changePassphraseAction->setToolTip(tr("Change the passphrase used for wallet encryption"));
-    unlockWalletAction = new QAction(QIcon(":/icons/lock_open"), tr("&Unlock Wallet..."), this);
-    unlockWalletAction->setToolTip(tr("Unlock wallet"));
-    lockWalletAction = new QAction(QIcon(":/icons/lock_closed"), tr("&Lock Wallet"), this);
-    lockWalletAction->setToolTip(tr("Lock wallet"));
     signMessageAction = new QAction(QIcon(":/icons/edit"), tr("Sign &message..."), this);
     verifyMessageAction = new QAction(QIcon(":/icons/transaction_0"), tr("&Verify message..."), this);
 
@@ -287,15 +271,13 @@ void BitcoinGUI::createActions()
     openRPCConsoleAction->setToolTip(tr("Open debugging and diagnostic console"));
 
     connect(quitAction, SIGNAL(triggered()), qApp, SLOT(quit()));
-//    connect(aboutAction, SIGNAL(triggered()), this, SLOT(aboutClicked()));
-//    connect(aboutQtAction, SIGNAL(triggered()), qApp, SLOT(aboutQt()));
+    connect(aboutAction, SIGNAL(triggered()), this, SLOT(aboutClicked()));
+    connect(aboutQtAction, SIGNAL(triggered()), qApp, SLOT(aboutQt()));
     connect(optionsAction, SIGNAL(triggered()), this, SLOT(optionsClicked()));
     connect(toggleHideAction, SIGNAL(triggered()), this, SLOT(toggleHidden()));
     connect(encryptWalletAction, SIGNAL(triggered(bool)), this, SLOT(encryptWallet(bool)));
     connect(backupWalletAction, SIGNAL(triggered()), this, SLOT(backupWallet()));
     connect(changePassphraseAction, SIGNAL(triggered()), this, SLOT(changePassphrase()));
-    connect(unlockWalletAction, SIGNAL(triggered()), this, SLOT(unlockWallet()));
-    connect(lockWalletAction, SIGNAL(triggered()), this, SLOT(lockWallet()));
     connect(signMessageAction, SIGNAL(triggered()), this, SLOT(gotoSignMessageTab()));
     connect(verifyMessageAction, SIGNAL(triggered()), this, SLOT(gotoVerifyMessageTab()));
 }
@@ -322,16 +304,17 @@ void BitcoinGUI::createMenuBar()
     QMenu *settings = appMenuBar->addMenu(tr("&Settings"));
     settings->addAction(encryptWalletAction);
     settings->addAction(changePassphraseAction);
-    settings->addAction(unlockWalletAction);
-    settings->addAction(lockWalletAction);
     settings->addSeparator();
     settings->addAction(optionsAction);
 
     QMenu *help = appMenuBar->addMenu(tr("&Help"));
     help->addAction(openRPCConsoleAction);
     help->addSeparator();
-//    help->addAction(aboutAction);
-//    help->addAction(aboutQtAction);
+    help->addAction(aboutAction);
+    help->addAction(aboutQtAction);
+
+	// QString ss("QMenuBar::item { background-color: #ceffee; color: black }"); 
+    // appMenuBar->setStyleSheet(ss);
 }
 
 void BitcoinGUI::createToolBars()
@@ -366,12 +349,12 @@ void BitcoinGUI::setClientModel(ClientModel *clientModel)
 #endif
             if(trayIcon)
             {
-                trayIcon->setToolTip(tr("Wincoin client") + QString(" ") + tr("[testnet]"));
+                trayIcon->setToolTip(tr("WinCoin client") + QString(" ") + tr("[testnet]"));
                 trayIcon->setIcon(QIcon(":/icons/toolbar_testnet"));
                 toggleHideAction->setIcon(QIcon(":/icons/toolbar_testnet"));
             }
 
-           // aboutAction->setIcon(QIcon(":/icons/toolbar_testnet"));
+            aboutAction->setIcon(QIcon(":/icons/toolbar_testnet"));
         }
 
         // Keep up to date with client
@@ -426,7 +409,7 @@ void BitcoinGUI::createTrayIcon()
     trayIcon = new QSystemTrayIcon(this);
     trayIconMenu = new QMenu(this);
     trayIcon->setContextMenu(trayIconMenu);
-    trayIcon->setToolTip(tr("Wincoin client"));
+    trayIcon->setToolTip(tr("WinCoin client"));
     trayIcon->setIcon(QIcon(":/icons/toolbar"));
     connect(trayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
             this, SLOT(trayIconActivated(QSystemTrayIcon::ActivationReason)));
@@ -434,8 +417,8 @@ void BitcoinGUI::createTrayIcon()
 #else
     // Note: On Mac, the dock icon is used to provide the tray's functionality.
     MacDockIconHandler *dockIconHandler = MacDockIconHandler::instance();
-    dockIconHandler->setMainWindow((QMainWindow *)this);
     trayIconMenu = dockIconHandler->dockMenu();
+    dockIconHandler->setMainWindow((QMainWindow *)this);
 #endif
 
     // Configuration of the tray icon (or dock icon) icon menu
@@ -496,7 +479,7 @@ void BitcoinGUI::setNumConnections(int count)
     default: icon = ":/icons/connect_4"; break;
     }
     labelConnectionsIcon->setPixmap(QIcon(icon).pixmap(STATUSBAR_ICONSIZE,STATUSBAR_ICONSIZE));
-    labelConnectionsIcon->setToolTip(tr("%n active connection(s) to Wincoin network", "", count));
+    labelConnectionsIcon->setToolTip(tr("%n active connection(s) to WinCoin network", "", count));
 }
 
 void BitcoinGUI::setNumBlocks(int count, int nTotalBlocks)
@@ -542,10 +525,24 @@ void BitcoinGUI::setNumBlocks(int count, int nTotalBlocks)
     // Override progressBarLabel text and hide progress bar, when we have warnings to display
     if (!strStatusBarWarnings.isEmpty())
     {
-        progressBarLabel->setText(strStatusBarWarnings);
+        QString s1 = "Info:Minting suspended due to locked wallet.";
+        QString s2 = "Warning: This version is obsolete, upgrade required!";
+        if (strStatusBarWarnings == s1)
+        {
+            progressBarLabel->setText(tr("Info:Minting suspended due to locked wallet."));
+        }
+        else
+        if (strStatusBarWarnings == s2)
+        {
+            progressBarLabel->setText(tr("Warning: This version is obsolete, upgrade required!"));
+        }
+        else
+            progressBarLabel->setText(strStatusBarWarnings);
         progressBarLabel->setVisible(true);
         progressBar->setVisible(false);
     }
+
+	tooltip = tr("Current difficulty is %1.").arg(clientModel->GetDifficulty()) + QString("<br>") + tooltip;
 
     QDateTime lastBlockDate = clientModel->getLastBlockDate();
     int secs = lastBlockDate.secsTo(QDateTime::currentDateTime());
@@ -656,9 +653,16 @@ void BitcoinGUI::askFee(qint64 nFeeRequired, bool *payFee)
           "which goes to the nodes that process your transaction and helps to support the network.  "
           "Do you want to pay the fee?").arg(
                 BitcoinUnits::formatWithUnit(BitcoinUnits::BTC, nFeeRequired));
-    QMessageBox::StandardButton retval = QMessageBox::question(
-          this, tr("Confirm transaction fee"), strMessage,
-          QMessageBox::Yes|QMessageBox::Cancel, QMessageBox::Yes);
+//    QMessageBox::StandardButton retval = QMessageBox::question(
+//          this, tr("Confirm transaction fee"), strMessage,
+//          QMessageBox::Yes|QMessageBox::Cancel, QMessageBox::Yes);
+
+    QMessageBox box(QMessageBox::Question, tr("Confirm transaction fee"), strMessage);
+    box.setStandardButtons (QMessageBox::Yes|QMessageBox::Cancel);
+    box.setButtonText (QMessageBox::Yes,QString("确定"));
+    box.setButtonText (QMessageBox::Cancel,QString("取消"));
+    int retval = box.exec ();
+
     *payFee = (retval == QMessageBox::Yes);
 }
 
@@ -786,7 +790,7 @@ void BitcoinGUI::dropEvent(QDropEvent *event)
         if (nValidUrisFound)
             gotoSendCoinsPage();
         else
-            notificator->notify(Notificator::Warning, tr("URI handling"), tr("URI can not be parsed! This can be caused by an invalid Wincoin address or malformed URI parameters."));
+            notificator->notify(Notificator::Warning, tr("URI handling"), tr("URI can not be parsed! This can be caused by an invalid WinCoin address or malformed URI parameters."));
     }
 
     event->acceptProposedAction();
@@ -801,7 +805,7 @@ void BitcoinGUI::handleURI(QString strURI)
         gotoSendCoinsPage();
     }
     else
-        notificator->notify(Notificator::Warning, tr("URI handling"), tr("URI can not be parsed! This can be caused by an invalid Wincoin address or malformed URI parameters."));
+        notificator->notify(Notificator::Warning, tr("URI handling"), tr("URI can not be parsed! This can be caused by an invalid WinCoin address or malformed URI parameters."));
 }
 
 void BitcoinGUI::setEncryptionStatus(int status)
@@ -812,8 +816,6 @@ void BitcoinGUI::setEncryptionStatus(int status)
         labelEncryptionIcon->hide();
         encryptWalletAction->setChecked(false);
         changePassphraseAction->setEnabled(false);
-        unlockWalletAction->setVisible(false);
-        lockWalletAction->setVisible(false);
         encryptWalletAction->setEnabled(true);
         break;
     case WalletModel::Unlocked:
@@ -822,8 +824,6 @@ void BitcoinGUI::setEncryptionStatus(int status)
         labelEncryptionIcon->setToolTip(tr("Wallet is <b>encrypted</b> and currently <b>unlocked</b>"));
         encryptWalletAction->setChecked(true);
         changePassphraseAction->setEnabled(true);
-        unlockWalletAction->setVisible(false);
-        lockWalletAction->setVisible(true);
         encryptWalletAction->setEnabled(false); // TODO: decrypt currently not supported
         break;
     case WalletModel::Locked:
@@ -832,8 +832,6 @@ void BitcoinGUI::setEncryptionStatus(int status)
         labelEncryptionIcon->setToolTip(tr("Wallet is <b>encrypted</b> and currently <b>locked</b>"));
         encryptWalletAction->setChecked(true);
         changePassphraseAction->setEnabled(true);
-        unlockWalletAction->setVisible(true);
-        lockWalletAction->setVisible(false);
         encryptWalletAction->setEnabled(false); // TODO: decrypt currently not supported
         break;
     }
@@ -853,7 +851,11 @@ void BitcoinGUI::encryptWallet(bool status)
 
 void BitcoinGUI::backupWallet()
 {
-    QString saveDir = QDesktopServices::storageLocation(QDesktopServices::DocumentsLocation);
+	#if QT_VERSION < 0x050000
+     QString saveDir = QDesktopServices::storageLocation(QDesktopServices::DocumentsLocation);
+#else
+    QString saveDir = QStandardPaths::writableLocation(QStandardPaths::DocumentsLocation);
+#endif
     QString filename = QFileDialog::getSaveFileName(this, tr("Backup Wallet"), saveDir, tr("Wallet Data (*.dat)"));
     if(!filename.isEmpty()) {
         if(!walletModel->backupWallet(filename)) {
@@ -876,20 +878,10 @@ void BitcoinGUI::unlockWallet()
     // Unlock wallet when requested by wallet model
     if(walletModel->getEncryptionStatus() == WalletModel::Locked)
     {
-        AskPassphraseDialog::Mode mode = sender() == unlockWalletAction ?
-              AskPassphraseDialog::UnlockStaking : AskPassphraseDialog::Unlock;
-        AskPassphraseDialog dlg(mode, this);
+        AskPassphraseDialog dlg(AskPassphraseDialog::Unlock, this);
         dlg.setModel(walletModel);
         dlg.exec();
     }
-}
-
-void BitcoinGUI::lockWallet()
-{
-    if(!walletModel)
-        return;
-
-    walletModel->setWalletLocked(true);
 }
 
 void BitcoinGUI::showNormalIfMinimized(bool fToggleHidden)
@@ -917,67 +909,4 @@ void BitcoinGUI::showNormalIfMinimized(bool fToggleHidden)
 void BitcoinGUI::toggleHidden()
 {
     showNormalIfMinimized(true);
-}
-
-void BitcoinGUI::updateWeight()
-{
-    if (!pwalletMain)
-        return;
-
-    TRY_LOCK(cs_main, lockMain);
-    if (!lockMain)
-        return;
-
-    TRY_LOCK(pwalletMain->cs_wallet, lockWallet);
-    if (!lockWallet)
-        return;
-
-    uint64_t nMinWeight = 0, nMaxWeight = 0;
-    pwalletMain->GetStakeWeight(*pwalletMain, nMinWeight, nMaxWeight, nWeight);
-}
-
-void BitcoinGUI::updateStakingIcon()
-{
-    updateWeight();
-
-    if (nLastCoinStakeSearchInterval && nWeight)
-    {
-        uint64_t nNetworkWeight = GetPoSKernelPS();
-        unsigned nEstimateTime = nTargetSpacing * nNetworkWeight / nWeight;
-
-        QString text;
-        if (nEstimateTime < 60)
-        {
-            text = tr("%n second(s)", "", nEstimateTime);
-        }
-        else if (nEstimateTime < 60*60)
-        {
-            text = tr("%n minute(s)", "", nEstimateTime/60);
-        }
-        else if (nEstimateTime < 24*60*60)
-        {
-            text = tr("%n hour(s)", "", nEstimateTime/(60*60));
-        }
-        else
-        {
-            text = tr("%n day(s)", "", nEstimateTime/(60*60*24));
-        }
-
-        labelStakingIcon->setPixmap(QIcon(":/icons/staking_on").pixmap(STATUSBAR_ICONSIZE,STATUSBAR_ICONSIZE));
-        labelStakingIcon->setToolTip(tr("Staking.<br>Your weight is %1<br>Network weight is %2<br>Expected time to earn reward is %3").arg(nWeight).arg(nNetworkWeight).arg(text));
-    }
-    else
-    {
-        labelStakingIcon->setPixmap(QIcon(":/icons/staking_off").pixmap(STATUSBAR_ICONSIZE,STATUSBAR_ICONSIZE));
-        if (pwalletMain && pwalletMain->IsLocked())
-            labelStakingIcon->setToolTip(tr("Not staking because wallet is locked"));
-        else if (vNodes.empty())
-            labelStakingIcon->setToolTip(tr("Not staking because wallet is offline"));
-        else if (IsInitialBlockDownload())
-            labelStakingIcon->setToolTip(tr("Not staking because wallet is syncing"));
-        else if (!nWeight)
-            labelStakingIcon->setToolTip(tr("Not staking because you don't have mature coins"));
-        else
-            labelStakingIcon->setToolTip(tr("Not staking"));
-    }
 }

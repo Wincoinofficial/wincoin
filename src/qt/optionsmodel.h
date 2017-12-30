@@ -26,15 +26,18 @@ public:
         ProxyPort,         // int
         ProxySocksVersion, // int
         Fee,               // qint64
-        ReserveBalance,    // qint64
         DisplayUnit,       // BitcoinUnits::Unit
         DisplayAddresses,  // bool
+        DetachDatabases,   // bool
         Language,          // QString
-        CoinControlFeatures, // bool
+        CoinControlFeatures, // bool  // Coin Control
         OptionIDRowCount,
     };
 
     void Init();
+
+    /* Migrate settings from wallet.dat after app initialization */
+    bool Upgrade(); /* returns true if settings upgraded */
 
     int rowCount(const QModelIndex & parent = QModelIndex()) const;
     QVariant data(const QModelIndex & index, int role = Qt::DisplayRole) const;
@@ -42,12 +45,11 @@ public:
 
     /* Explicit getters */
     qint64 getTransactionFee();
-    qint64 getReserveBalance();
     bool getMinimizeToTray();
     bool getMinimizeOnClose();
     int getDisplayUnit();
     bool getDisplayAddresses();
-    bool getCoinControlFeatures();
+    bool getCoinControlFeatures();// Coin Control
     QString getLanguage() { return language; }
 
 private:
@@ -55,13 +57,14 @@ private:
     bool bDisplayAddresses;
     bool fMinimizeToTray;
     bool fMinimizeOnClose;
-    bool fCoinControlFeatures;
+    bool fCoinControlFeatures;// Coin Control
     QString language;
 
 signals:
     void displayUnitChanged(int unit);
+
+    // Coin Control
     void transactionFeeChanged(qint64);
-    void reserveBalanceChanged(qint64);
     void coinControlFeaturesChanged(bool);
 };
 

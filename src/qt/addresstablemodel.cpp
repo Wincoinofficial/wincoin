@@ -69,8 +69,6 @@ public:
                                   QString::fromStdString(address.ToString())));
             }
         }
-        // qLowerBound() and qUpperBound() require our cachedAddressTable list to be sorted in asc order
-        qSort(cachedAddressTable.begin(), cachedAddressTable.end(), AddressTableEntryLessThan());
     }
 
     void updateEntry(const QString &address, const QString &label, bool isMine, int status)
@@ -90,27 +88,27 @@ public:
         case CT_NEW:
             if(inModel)
             {
-                OutputDebugStringF("Warning: AddressTablePriv::updateEntry: Got CT_NEW, but entry is already in model\n");
+                OutputDebugStringF("Warning: AddressTablePriv::updateEntry: Got CT_NOW, but entry is already in model\n");
                 break;
             }
             parent->beginInsertRows(QModelIndex(), lowerIndex, lowerIndex);
             cachedAddressTable.insert(lowerIndex, AddressTableEntry(newEntryType, label, address));
             parent->endInsertRows();
             break;
-        case CT_UPDATED:
+        case CT_UPDAWC:
             if(!inModel)
             {
-                OutputDebugStringF("Warning: AddressTablePriv::updateEntry: Got CT_UPDATED, but entry is not in model\n");
+                OutputDebugStringF("Warning: AddressTablePriv::updateEntry: Got CT_UPDAWC, but entry is not in model\n");
                 break;
             }
             lower->type = newEntryType;
             lower->label = label;
             parent->emitDataChanged(lowerIndex);
             break;
-        case CT_DELETED:
+        case CT_DELEWC:
             if(!inModel)
             {
-                OutputDebugStringF("Warning: AddressTablePriv::updateEntry: Got CT_DELETED, but entry is not in model\n");
+                OutputDebugStringF("Warning: AddressTablePriv::updateEntry: Got CT_DELEWC, but entry is not in model\n");
                 break;
             }
             parent->beginRemoveRows(QModelIndex(), lowerIndex, upperIndex-1);
@@ -210,7 +208,7 @@ QVariant AddressTableModel::data(const QModelIndex &index, int role) const
     return QVariant();
 }
 
-bool AddressTableModel::setData(const QModelIndex &index, const QVariant &value, int role)
+bool AddressTableModel::setData(const QModelIndex & index, const QVariant & value, int role)
 {
     if(!index.isValid())
         return false;
@@ -223,36 +221,18 @@ bool AddressTableModel::setData(const QModelIndex &index, const QVariant &value,
         switch(index.column())
         {
         case Label:
-            // Do nothing, if old label == new label
-            if(rec->label == value.toString())
-            {
-                editStatus = NO_CHANGES;
-                return false;
-            }
             wallet->SetAddressBookName(CBitcoinAddress(rec->address.toStdString()).Get(), value.toString().toStdString());
+            rec->label = value.toString();
             break;
         case Address:
-            // Do nothing, if old address == new address
-            if(CBitcoinAddress(rec->address.toStdString()) == CBitcoinAddress(value.toString().toStdString()))
-            {
-                editStatus = NO_CHANGES;
-                return false;
-            }
             // Refuse to set invalid address, set error status and return false
-            else if(!walletModel->validateAddress(value.toString()))
+            if(!walletModel->validateAddress(value.toString()))
             {
                 editStatus = INVALID_ADDRESS;
                 return false;
             }
-            // Check for duplicate addresses to prevent accidental deletion of addresses, if you try
-            // to paste an existing address over another address (with a different label)
-            else if(wallet->mapAddressBook.count(CBitcoinAddress(value.toString().toStdString()).Get()))
-            {
-                editStatus = DUPLICATE_ADDRESS;
-                return false;
-            }
             // Double-check that we're not overwriting a receiving address
-            else if(rec->type == AddressTableEntry::Sending)
+            if(rec->type == AddressTableEntry::Sending)
             {
                 {
                     LOCK(wallet->cs_wallet);
@@ -264,6 +244,7 @@ bool AddressTableModel::setData(const QModelIndex &index, const QVariant &value,
             }
             break;
         }
+
         return true;
     }
     return false;
@@ -281,7 +262,7 @@ QVariant AddressTableModel::headerData(int section, Qt::Orientation orientation,
     return QVariant();
 }
 
-Qt::ItemFlags AddressTableModel::flags(const QModelIndex &index) const
+Qt::ItemFlags AddressTableModel::flags(const QModelIndex & index) const
 {
     if(!index.isValid())
         return 0;
@@ -298,7 +279,7 @@ Qt::ItemFlags AddressTableModel::flags(const QModelIndex &index) const
     return retval;
 }
 
-QModelIndex AddressTableModel::index(int row, int column, const QModelIndex &parent) const
+QModelIndex AddressTableModel::index(int row, int column, const QModelIndex & parent) const
 {
     Q_UNUSED(parent);
     AddressTableEntry *data = priv->index(row);
@@ -364,7 +345,6 @@ QString AddressTableModel::addRow(const QString &type, const QString &label, con
     {
         return QString();
     }
-
     // Add entry
     {
         LOCK(wallet->cs_wallet);
@@ -373,7 +353,7 @@ QString AddressTableModel::addRow(const QString &type, const QString &label, con
     return QString::fromStdString(strAddress);
 }
 
-bool AddressTableModel::removeRows(int row, int count, const QModelIndex &parent)
+bool AddressTableModel::removeRows(int row, int count, const QModelIndex & parent)
 {
     Q_UNUSED(parent);
     AddressTableEntry *rec = priv->index(row);

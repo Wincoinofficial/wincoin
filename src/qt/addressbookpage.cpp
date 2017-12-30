@@ -12,6 +12,7 @@
 #include <QClipboard>
 #include <QMessageBox>
 #include <QMenu>
+#include <QPushButton>
 
 #ifdef USE_QRCODE
 #include "qrcodedialog.h"
@@ -26,6 +27,8 @@ AddressBookPage::AddressBookPage(Mode mode, Tabs tab, QWidget *parent) :
     tab(tab)
 {
     ui->setupUi(this);
+    ui->buttonBox->button(QDialogButtonBox::Ok)->setText(QString("确定"));
+
 
 #ifdef Q_OS_MAC // Icons on push buttons are very uncommon on Mac
     ui->newAddressButton->setIcon(QIcon());
@@ -132,10 +135,17 @@ void AddressBookPage::setModel(AddressTableModel *model)
     ui->tableView->sortByColumn(0, Qt::AscendingOrder);
 
     // Set column widths
-    ui->tableView->horizontalHeader()->resizeSection(
-            AddressTableModel::Address, 320);
-    ui->tableView->horizontalHeader()->setResizeMode(
-            AddressTableModel::Label, QHeaderView::Stretch);
+    // ui->tableView->horizontalHeader()->resizeSection(
+            // AddressTableModel::Address, 320);
+    // ui->tableView->horizontalHeader()->setResizeMode(
+            // AddressTableModel::Label, QHeaderView::Stretch);
+#if QT_VERSION < 0x050000
+  ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::Label, QHeaderView::Stretch);
+  ui->tableView->horizontalHeader()->setResizeMode(AddressTableModel::Address, QHeaderView::ResizeToContents);
+#else
+    ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::Label, QHeaderView::Stretch);
+    ui->tableView->horizontalHeader()->setSectionResizeMode(AddressTableModel::Address, QHeaderView::ResizeToContents);
+#endif
 
     connect(ui->tableView->selectionModel(), SIGNAL(selectionChanged(QItemSelection,QItemSelection)),
             this, SLOT(selectionChanged()));
