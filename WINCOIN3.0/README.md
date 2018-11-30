@@ -7,15 +7,17 @@ Launch Date: 11/11/2017 @ 12:00 GMT
 
 General Specs:
 
-Algorithm: X11 POW/POS 
+Algorithm: Scrypt POW/POS 
 Block Time: 60 seconds
-Total Coin: 500,000,000 WC
+Total Coin:500,000,000 WC
 Mined Block Confirmation: 50
 Transaction Confirmation: 6
-Port: 30193 
-Rpc port: 30199 
+Port: 11610
+Rpc port: 11611 
 
-Block Rewards POS: 0.1%
+Block Rewards:
+
+year 1-3 (POS): 3.5%
 
 
 
