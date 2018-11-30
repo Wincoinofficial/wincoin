@@ -32,6 +32,8 @@ SendCoinsEntry::SendCoinsEntry(QWidget *parent) :
 
     GUIUtil::setupAddressWidget(ui->payTo, this);
     ui->narration->setMaxLength(24);
+    ui->narration->setVisible(false);
+    ui->label9->setVisible(false);
 }
 
 SendCoinsEntry::~SendCoinsEntry()
