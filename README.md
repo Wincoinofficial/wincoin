@@ -12,7 +12,7 @@ Block Time: 60 seconds
 Total Coin: 500,000,000 WC
 Mined Block Confirmation: 50
 Transaction Confirmation: 6
-Port: 30193 
+Port: 30193
 Rpc port: 30199 
 
 Block Rewards POS: 0.1%
