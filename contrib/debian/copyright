@@ -64,7 +64,7 @@ Files: src/qt/res/icons/configure.png, src/qt/res/icons/quit.png,
       src/qt/res/icons/remove.png
 Copyright: http://www.everaldo.com
 License: LGPL
-Comment: Icon Pack: Crystal SVG
+Comment: Icon Pack: WinCoin SVG
 
 Files: src/qt/res/icons/bitcoin.png, src/qt/res/icons/toolbar.png
 Copyright: Bitboy (optimized for 16x16 by Wladimir van der Laan)
@@ -96,7 +96,7 @@ License: Expat
  in all copies or substantial portions of the Software.
  .
  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
- OR IMPLIED, INCLUDING BUT NOT LIMIWC TO THE WARRANTIES OF
+ OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
  MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
  IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
  CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,

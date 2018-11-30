@@ -23,7 +23,8 @@ public:
         Date = 1,
         Type = 2,
         ToAddress = 3,
-        Amount = 4
+        Narration = 4,
+        Amount = 5
     };
 
     /** Roles to get specific information from a transaction row.
@@ -47,7 +48,9 @@ public:
         /** Is transaction confirmed? */
         ConfirmedRole,
         /** Formatted amount, without brackets when unconfirmed */
-        FormattedAmountRole
+        FormattedAmountRole,
+        /** Transaction status (TransactionRecord::Status) */
+        StatusRole
     };
 
     int rowCount(const QModelIndex &parent) const;
@@ -60,7 +63,6 @@ private:
     WalletModel *walletModel;
     QStringList columns;
     TransactionTablePriv *priv;
-    int cachedNumBlocks;
 
     QString lookupAddress(const std::string &address, bool tooltip) const;
     QVariant addressColor(const TransactionRecord *wtx) const;
@@ -69,6 +71,7 @@ private:
     QString formatTxType(const TransactionRecord *wtx) const;
     QString formatTxToAddress(const TransactionRecord *wtx, bool tooltip) const;
     QString formatTxAmount(const TransactionRecord *wtx, bool showUnconfirmed=true) const;
+    QString formatNarration(const TransactionRecord *wtx) const;
     QString formatTooltip(const TransactionRecord *rec) const;
     QVariant txStatusDecoration(const TransactionRecord *wtx) const;
     QVariant txAddressDecoration(const TransactionRecord *wtx) const;

@@ -2,8 +2,6 @@
 #define WALLETMODEL_H
 
 #include <QObject>
-
-// Coin Control
 #include <vector>
 #include <map>
 
@@ -13,8 +11,6 @@ class OptionsModel;
 class AddressTableModel;
 class TransactionTableModel;
 class CWallet;
-
-// Coin Control
 class CKeyID;
 class CPubKey;
 class COutput;
@@ -31,6 +27,8 @@ class SendCoinsRecipient
 public:
     QString address;
     QString label;
+    QString narration;
+    int typeInd;
     qint64 amount;
 };
 
@@ -53,6 +51,7 @@ public:
         DuplicateAddress,
         TransactionCreationFailed, // Error returned when wallet is still locked
         TransactionCommitFailed,
+        NarrationTooLong,
         Aborted
     };
 
@@ -80,8 +79,7 @@ public:
     // Return status record for SendCoins, contains error id + information
     struct SendCoinsReturn
     {
-        //SendCoinsReturn(StatusCode status,
-        SendCoinsReturn(StatusCode status=Aborted,  // Coin Control
+        SendCoinsReturn(StatusCode status=Aborted,
                          qint64 fee=0,
                          QString hex=QString()):
             status(status), fee(fee), hex(hex) {}
@@ -91,8 +89,7 @@ public:
     };
 
     // Send coins to a list of recipients
-    //SendCoinsReturn sendCoins(const QList<SendCoinsRecipient> &recipients);
-    SendCoinsReturn sendCoins(const QList<SendCoinsRecipient> &recipients, const CCoinControl *coinControl=NULL);// Coin Control
+    SendCoinsReturn sendCoins(const QList<SendCoinsRecipient> &recipients, const CCoinControl *coinControl=NULL);
 
     // Wallet encryption
     bool setWalletEncrypted(bool encrypted, const SecureString &passphrase);
@@ -124,7 +121,6 @@ public:
 
     UnlockContext requestUnlock();
 
-    // Coin Control
     bool getPubKey(const CKeyID &address, CPubKey& vchPubKeyOut) const;
     void getOutputs(const std::vector<COutPoint>& vOutpoints, std::vector<COutput>& vOutputs);
     void listCoins(std::map<QString, std::vector<COutput> >& mapCoins) const;
@@ -132,6 +128,7 @@ public:
     void lockCoin(COutPoint& output);
     void unlockCoin(COutPoint& output);
     void listLockedCoins(std::vector<COutPoint>& vOutpts);
+
 private:
     CWallet *wallet;
 

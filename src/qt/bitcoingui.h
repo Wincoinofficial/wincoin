@@ -3,13 +3,20 @@
 
 #include <QMainWindow>
 #include <QSystemTrayIcon>
+#include <QLabel>
+
+#include <stdint.h>
 
 class TransactionTableModel;
 class ClientModel;
 class WalletModel;
+class MessageModel;
 class TransactionView;
 class OverviewPage;
 class AddressBookPage;
+class MessagePage;
+class StatisticsPage;
+class BlockBrowser;
 class SendCoinsDialog;
 class SignVerifyMessageDialog;
 class Notificator;
@@ -25,6 +32,21 @@ class QProgressBar;
 class QStackedWidget;
 class QUrl;
 QT_END_NAMESPACE
+
+class ActiveLabel : public QLabel
+{
+    Q_OBJECT
+public:
+    ActiveLabel(const QString & text = "", QWidget * parent = 0);
+    ~ActiveLabel(){}
+
+signals:
+    void clicked();
+
+protected:
+    void mouseReleaseEvent (QMouseEvent * event) ;
+
+};
 
 /**
   Bitcoin GUI main class. This class represents the main window of the Bitcoin UI. It communicates with both the client and
@@ -46,6 +68,11 @@ public:
         functionality.
     */
     void setWalletModel(WalletModel *walletModel);
+    /** Set the message model.
+        The message model represents encryption message database, and offers access to the list of messages, address book and sending
+        functionality.
+    */
+    void setMessageModel(MessageModel *messageModel);
 
 protected:
     void changeEvent(QEvent *e);
@@ -56,28 +83,39 @@ protected:
 private:
     ClientModel *clientModel;
     WalletModel *walletModel;
+    MessageModel *messageModel;
 
     QStackedWidget *centralWidget;
 
     OverviewPage *overviewPage;
+	StatisticsPage *statisticsPage;
+	BlockBrowser *blockBrowser;
     QWidget *transactionsPage;
     AddressBookPage *addressBookPage;
     AddressBookPage *receiveCoinsPage;
+    MessagePage *messagePage;
     SendCoinsDialog *sendCoinsPage;
     SignVerifyMessageDialog *signVerifyMessageDialog;
 
-    QLabel *labelEncryptionIcon;
+    ActiveLabel *labelEncryptionIcon;
+    QLabel *labelStakingIcon;
     QLabel *labelConnectionsIcon;
     QLabel *labelBlocksIcon;
     QLabel *progressBarLabel;
+    QLabel *mainIcon;
+    QToolBar *mainToolbar;
+    QToolBar *secondaryToolbar;
     QProgressBar *progressBar;
 
     QMenuBar *appMenuBar;
     QAction *overviewAction;
+	QAction *statisticsAction;
+	QAction *blockAction;
     QAction *historyAction;
     QAction *quitAction;
     QAction *sendCoinsAction;
     QAction *addressBookAction;
+    QAction *messageAction;
     QAction *signMessageAction;
     QAction *verifyMessageAction;
     QAction *aboutAction;
@@ -88,6 +126,8 @@ private:
     QAction *encryptWalletAction;
     QAction *backupWalletAction;
     QAction *changePassphraseAction;
+    QAction *unlockWalletAction;
+    QAction *lockWalletAction;
     QAction *aboutQtAction;
     QAction *openRPCConsoleAction;
 
@@ -97,6 +137,8 @@ private:
     RPCConsole *rpcConsole;
 
     QMovie *syncIconMovie;
+
+    uint64_t nWeight;
 
     /** Create the main UI actions. */
     void createActions();
@@ -131,9 +173,16 @@ public slots:
     void askFee(qint64 nFeeRequired, bool *payFee);
     void handleURI(QString strURI);
 
+    void mainToolbarOrientation(Qt::Orientation orientation);
+    void secondaryToolbarOrientation(Qt::Orientation orientation);
+
 private slots:
     /** Switch to overview (home) page */
     void gotoOverviewPage();
+	/** Switch to Statistics page */
+	void gotoStatisticsPage();
+	/** Switch to block explorer*/
+    void gotoBlockBrowser();
     /** Switch to history (transactions) page */
     void gotoHistoryPage();
     /** Switch to address book page */
@@ -142,6 +191,8 @@ private slots:
     void gotoReceiveCoinsPage();
     /** Switch to send coins page */
     void gotoSendCoinsPage();
+    /** Switch to message page */
+    void gotoMessagePage();
 
     /** Show Sign/Verify Message dialog and switch to sign message tab */
     void gotoSignMessageTab(QString addr = "");
@@ -161,6 +212,13 @@ private slots:
         The new items are those between start and end inclusive, under the given parent item.
     */
     void incomingTransaction(const QModelIndex & parent, int start, int end);
+
+    /** Show incoming message notification for new messages.
+
+        The new items are those between start and end inclusive, under the given parent item.
+    */
+    void incomingMessage(const QModelIndex & parent, int start, int end);
+
     /** Encrypt the wallet */
     void encryptWallet(bool status);
     /** Backup the wallet */
@@ -170,10 +228,15 @@ private slots:
     /** Ask for passphrase to unlock wallet temporarily */
     void unlockWallet();
 
+    void lockWallet();
+
     /** Show window if hidden, unminimize when minimized, rise when obscured or show if hidden and fToggleHidden is true */
     void showNormalIfMinimized(bool fToggleHidden = false);
     /** simply calls showNormalIfMinimized(true) for use in SLOT() macro */
     void toggleHidden();
+
+    void updateWeight();
+    void updateStakingIcon();
 };
 
 #endif

@@ -35,7 +35,7 @@ Icon: src/qt/res/icons/configure.png, src/qt/res/icons/quit.png,
       src/qt/res/icons/add.png, src/qt/res/icons/edit.png,
       src/qt/res/icons/remove.png (edited)
 Designer: http://www.everaldo.com
-Icon Pack: Crystal SVG
+Icon Pack: WinCoin SVG
 License: LGPL
 
 Icon: src/qt/res/icons/bitcoin.png, src/qt/res/icons/toolbar.png
@@ -54,3 +54,5 @@ Designer: Crobbo (forum)
 Site: https://bitcointalk.org/index.php?topic=32273.0
 License: Public domain
 
+ShadowCoin Logo
+License: Creative Commons Attribution 4.0 International License

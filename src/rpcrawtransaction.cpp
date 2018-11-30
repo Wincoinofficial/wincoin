@@ -7,7 +7,7 @@
 
 #include "base58.h"
 #include "bitcoinrpc.h"
-#include "db.h"
+#include "txdb.h"
 #include "init.h"
 #include "main.h"
 #include "net.h"
@@ -18,18 +18,20 @@ using namespace boost;
 using namespace boost::assign;
 using namespace json_spirit;
 
-void ScriptPubKeyToJSON(const CScript& scriptPubKey, Object& out)
+void ScriptPubKeyToJSON(const CScript& scriptPubKey, Object& out, bool fIncludeHex)
 {
     txnouttype type;
     vector<CTxDestination> addresses;
     int nRequired;
 
     out.push_back(Pair("asm", scriptPubKey.ToString()));
-    out.push_back(Pair("hex", HexStr(scriptPubKey.begin(), scriptPubKey.end())));
+
+    if (fIncludeHex)
+        out.push_back(Pair("hex", HexStr(scriptPubKey.begin(), scriptPubKey.end())));
 
     if (!ExtractDestinations(scriptPubKey, type, addresses, nRequired))
     {
-        out.push_back(Pair("type", GetTxnOutputType(TX_NONSTANDARD)));
+        out.push_back(Pair("type", GetTxnOutputType(type)));
         return;
     }
 
@@ -46,8 +48,8 @@ void TxToJSON(const CTransaction& tx, const uint256 hashBlock, Object& entry)
 {
     entry.push_back(Pair("txid", tx.GetHash().GetHex()));
     entry.push_back(Pair("version", tx.nVersion));
-    entry.push_back(Pair("time", (boost::int64_t)tx.nTime));
-    entry.push_back(Pair("locktime", (boost::int64_t)tx.nLockTime));
+    entry.push_back(Pair("time", (int64_t)tx.nTime));
+    entry.push_back(Pair("locktime", (int64_t)tx.nLockTime));
     Array vin;
     BOOST_FOREACH(const CTxIn& txin, tx.vin)
     {
@@ -57,13 +59,13 @@ void TxToJSON(const CTransaction& tx, const uint256 hashBlock, Object& entry)
         else
         {
             in.push_back(Pair("txid", txin.prevout.hash.GetHex()));
-            in.push_back(Pair("vout", (boost::int64_t)txin.prevout.n));
+            in.push_back(Pair("vout", (int64_t)txin.prevout.n));
             Object o;
             o.push_back(Pair("asm", txin.scriptSig.ToString()));
             o.push_back(Pair("hex", HexStr(txin.scriptSig.begin(), txin.scriptSig.end())));
             in.push_back(Pair("scriptSig", o));
         }
-        in.push_back(Pair("sequence", (boost::int64_t)txin.nSequence));
+        in.push_back(Pair("sequence", (int64_t)txin.nSequence));
         vin.push_back(in);
     }
     entry.push_back(Pair("vin", vin));
@@ -73,9 +75,9 @@ void TxToJSON(const CTransaction& tx, const uint256 hashBlock, Object& entry)
         const CTxOut& txout = tx.vout[i];
         Object out;
         out.push_back(Pair("value", ValueFromAmount(txout.nValue)));
-        out.push_back(Pair("n", (boost::int64_t)i));
+        out.push_back(Pair("n", (int64_t)i));
         Object o;
-        ScriptPubKeyToJSON(txout.scriptPubKey, o);
+        ScriptPubKeyToJSON(txout.scriptPubKey, o, false);
         out.push_back(Pair("scriptPubKey", o));
         vout.push_back(out);
     }
@@ -91,8 +93,8 @@ void TxToJSON(const CTransaction& tx, const uint256 hashBlock, Object& entry)
             if (pindex->IsInMainChain())
             {
                 entry.push_back(Pair("confirmations", 1 + nBestHeight - pindex->nHeight));
-                entry.push_back(Pair("time", (boost::int64_t)pindex->nTime));
-                entry.push_back(Pair("blocktime", (boost::int64_t)pindex->nTime));
+                entry.push_back(Pair("time", (int64_t)pindex->nTime));
+                entry.push_back(Pair("blocktime", (int64_t)pindex->nTime));
             }
             else
                 entry.push_back(Pair("confirmations", 0));
@@ -189,11 +191,18 @@ Value listunspent(const Array& params, bool fHelp)
                 continue;
         }
 
-        int64 nValue = out.tx->vout[out.i].nValue;
+        int64_t nValue = out.tx->vout[out.i].nValue;
         const CScript& pk = out.tx->vout[out.i].scriptPubKey;
         Object entry;
         entry.push_back(Pair("txid", out.tx->GetHash().GetHex()));
         entry.push_back(Pair("vout", out.i));
+        CTxDestination address;
+        if (ExtractDestination(out.tx->vout[out.i].scriptPubKey, address))
+        {
+            entry.push_back(Pair("address", CBitcoinAddress(address).ToString()));
+            if (pwalletMain->mapAddressBook.count(address))
+                entry.push_back(Pair("account", pwalletMain->mapAddressBook[address]));
+        }
         entry.push_back(Pair("scriptPubKey", HexStr(pk.begin(), pk.end())));
         entry.push_back(Pair("amount",ValueFromAmount(nValue)));
         entry.push_back(Pair("confirmations",out.nDepth));
@@ -257,7 +266,7 @@ Value createrawtransaction(const Array& params, bool fHelp)
 
         CScript scriptPubKey;
         scriptPubKey.SetDestination(address.Get());
-        int64 nAmount = AmountFromValue(s.value_);
+        int64_t nAmount = AmountFromValue(s.value_);
 
         CTxOut out(nAmount, scriptPubKey);
         rawTx.vout.push_back(out);
@@ -291,6 +300,29 @@ Value decoderawtransaction(const Array& params, bool fHelp)
     TxToJSON(tx, 0, result);
 
     return result;
+}
+
+Value decodescript(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() != 1)
+        throw runtime_error(
+            "decodescript <hex string>\n"
+            "Decode a hex-encoded script.");
+
+    RPCTypeCheck(params, list_of(str_type));
+
+    Object r;
+    CScript script;
+    if (params[0].get_str().size() > 0){
+        vector<unsigned char> scriptData(ParseHexV(params[0], "argument"));
+        script = CScript(scriptData.begin(), scriptData.end());
+    } else {
+        // Empty scripts are valid
+    }
+    ScriptPubKeyToJSON(script, r, false);
+
+    r.push_back(Pair("p2sh", CBitcoinAddress(script.GetID()).ToString()));
+    return r;
 }
 
 Value signrawtransaction(const Array& params, bool fHelp)
@@ -470,7 +502,7 @@ Value signrawtransaction(const Array& params, bool fHelp)
         {
             txin.scriptSig = CombineSignatures(prevPubKey, mergedTx, i, txin.scriptSig, txv.vin[i].scriptSig);
         }
-        if (!VerifyScript(txin.scriptSig, prevPubKey, mergedTx, i, true, 0))
+        if (!VerifyScript(txin.scriptSig, prevPubKey, mergedTx, i, 0))
             fComplete = false;
     }
 
@@ -526,7 +558,7 @@ Value sendrawtransaction(const Array& params, bool fHelp)
 
         SyncWithWallets(tx, NULL, true);
     }
-    RelayMessage(CInv(MSG_TX, hashTx), tx);
+    RelayTransaction(tx, hashTx);
 
     return hashTx.GetHex();
 }

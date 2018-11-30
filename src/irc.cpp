@@ -127,7 +127,7 @@ bool Wait(int nSeconds)
     {
         if (fShutdown)
             return false;
-        Sleep(1000);
+        MilliSleep(1000);
     }
     return true;
 }
@@ -189,11 +189,11 @@ bool GetIPFromIRC(SOCKET hSocket, string strMyName, CNetAddr& ipRet)
 void ThreadIRCSeed(void* parg)
 {
     // Make this thread recognisable as the IRC seeding thread
-    RenameThread("bitcoin-ircseed");
+    RenameThread("WinCoin-ircseed");
 
     try
     {
-        //ThreadIRCSeed2(parg);
+        ThreadIRCSeed2(parg);
     }
     catch (std::exception& e) {
         PrintExceptionContinue(&e, "ThreadIRCSeed()");
@@ -214,7 +214,7 @@ void ThreadIRCSeed2(void* parg)
         return;
 
     // ... or if IRC is not enabled.
-    if (!GetBoolArg("-irc", true))
+    if (!GetBoolArg("-irc", false))
         return;
 
     printf("ThreadIRCSeed started\n");
@@ -224,9 +224,9 @@ void ThreadIRCSeed2(void* parg)
 
     while (!fShutdown)
     {
-        CService addrConnect("92.243.23.21", 6667); // irc.lfnet.org
+        CService addrConnect("", 8667); // irc.lfnet.org
 
-        CService addrIRC("irc.lfnet.org", 6667, true);
+        CService addrIRC("", 8667, true);
         if (addrIRC.IsValid())
             addrConnect = addrIRC;
 
@@ -260,7 +260,7 @@ void ThreadIRCSeed2(void* parg)
         if (!fNoListen && GetLocal(addrLocal, &addrIPv4) && nNameRetry<3)
             strMyName = EncodeAddress(GetLocalAddress(&addrConnect));
         if (strMyName == "")
-            strMyName = strprintf("x%"PRI64u"", GetRand(1000000000));
+            strMyName = strprintf("x%"PRIu64"", GetRand(1000000000));
 
         Send(hSocket, strprintf("NICK %s\r", strMyName.c_str()).c_str());
         Send(hSocket, strprintf("USER %s 8 * : %s\r", strMyName.c_str(), strMyName.c_str()).c_str());
@@ -284,7 +284,7 @@ void ThreadIRCSeed2(void* parg)
                 return;
         }
         nNameRetry = 0;
-        Sleep(500);
+        MilliSleep(500);
 
         // Get our external IP from the IRC server and re-nick before joining the channel
         CNetAddr addrFromIRC;
@@ -301,20 +301,22 @@ void ThreadIRCSeed2(void* parg)
             }
         }
 
-        if (fTestNet) {
-            Send(hSocket, "JOIN #WinCoinTEST2\r");
-            Send(hSocket, "WHO #WinCoinTEST2\r");
-        } else {
+        if (fTestNet)
+        {
+            Send(hSocket, "JOIN #sdcoinTEST\r");
+            Send(hSocket, "WHO #sdcoinTEST\r");
+        } else
+        {
             // randomly join #WinCoin00-#WinCoin05
-            // int channel_number = GetRandInt(5);
+            //int channel_number = GetRandInt(5);
 
             // Channel number is always 0 for initial release
             int channel_number = 0;
-            Send(hSocket, strprintf("JOIN #WinCoin%02d\r", channel_number).c_str());
-            Send(hSocket, strprintf("WHO #WinCoin%02d\r", channel_number).c_str());
+            Send(hSocket, strprintf("JOIN #sdcoin%02d\r", channel_number).c_str());
+            Send(hSocket, strprintf("WHO #sdcoin%02d\r", channel_number).c_str());
         }
 
-        int64 nStart = GetTime();
+        int64_t nStart = GetTime();
         string strLine;
         strLine.reserve(10000);
         while (!fShutdown && RecvLineIRC(hSocket, strLine))
@@ -356,8 +358,7 @@ void ThreadIRCSeed2(void* parg)
                     if (addrman.Add(addr, addrConnect, 51 * 60))
                         printf("IRC got new address: %s\n", addr.ToString().c_str());
                     nGotIRCAddresses++;
-                }
-                else
+                } else
                 {
                     printf("IRC decode failed\n");
                 }

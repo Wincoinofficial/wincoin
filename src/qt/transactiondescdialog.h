@@ -1,5 +1,5 @@
-#ifndef TRANSACTIONDWCDIALOG_H
-#define TRANSACTIONDWCDIALOG_H
+#ifndef TRANSACTIONDESCDIALOG_H
+#define TRANSACTIONDESCDIALOG_H
 
 #include <QDialog>
 
@@ -19,11 +19,8 @@ public:
     explicit TransactionDescDialog(const QModelIndex &idx, QWidget *parent = 0);
     ~TransactionDescDialog();
 
-private slots:
-    void on_pushButton1_clicked(bool checked);
-
 private:
     Ui::TransactionDescDialog *ui;
 };
 
-#endif // TRANSACTIONDWCDIALOG_H
+#endif // TRANSACTIONDESCDIALOG_H

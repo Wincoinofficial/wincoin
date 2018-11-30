@@ -3,7 +3,7 @@
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-# Mac OS X makefile for bitcoin
+# Mac OS X makefile for WinCoin
 # Originally by Laszlo Hanyecz (solar@heliacal.net)
 
 CXX=llvm-g++
@@ -20,16 +20,11 @@ LIBPATHS= \
  -L"$(DEPSDIR)/lib/db48"
 
 USE_UPNP:=1
-USE_IPV6:=1
 
 LIBS= -dead_strip
 
-TESTDEFS = -DTEST_DATA_DIR=$(abspath test/data)
-
 ifdef STATIC
-# Build STATIC if you are redistributing the bitcoind binary
-TESTLIBS += \
- $(DEPSDIR)/lib/libboost_unit_test_framework-mt.a
+# Build STATIC if you are redistributing the WinCoind binary
 LIBS += \
  $(DEPSDIR)/lib/db48/libdb_cxx-4.8.a \
  $(DEPSDIR)/lib/libboost_system-mt.a \
@@ -40,8 +35,6 @@ LIBS += \
  $(DEPSDIR)/lib/libcrypto.a \
  -lz
 else
-TESTLIBS += \
- -lboost_unit_test_framework-mt
 LIBS += \
  -ldb_cxx-4.8 \
  -lboost_system-mt \
@@ -51,7 +44,6 @@ LIBS += \
  -lssl \
  -lcrypto \
  -lz
-TESTDEFS += -DBOOST_TEST_DYN_LINK
 endif
 
 DEFS=-DMAC_OSX -DMSG_NOSIGNAL=0 -DBOOST_SPIRIT_THREADSAFE
@@ -66,10 +58,21 @@ CFLAGS = -g -msse2
 endif
 
 # ppc doesn't work because we don't support big-endian
-CFLAGS += -Wall -Wextra -Wformat -Wformat-security -Wno-unused-parameter \
+CFLAGS += -Wall -Wextra -Wformat -Wno-ignored-qualifiers -Wformat-security -Wno-unused-parameter \
     $(DEBUGFLAGS) $(DEFS) $(INCLUDEPATHS)
 
 OBJS= \
+    obj/shavite.o \
+    obj/echo.o \
+    obj/simd.o \
+	obj/blake.o \
+    obj/bmw.o \
+    obj/cubehash.o \    
+	obj/luffa.o \
+    obj/jh.o \
+    obj/keccak.o \
+	obj/groestl.o \
+	obj/skein.o \
     obj/alert.o \
     obj/version.o \
     obj/checkpoints.o \
@@ -82,6 +85,7 @@ OBJS= \
     obj/irc.o \
     obj/keystore.o \
     obj/main.o \
+    obj/miner.o \
     obj/net.o \
     obj/protocol.o \
     obj/bitcoinrpc.o \
@@ -99,9 +103,9 @@ OBJS= \
     obj/noui.o \
     obj/pbkdf2.o \
     obj/kernel.o \
-    obj/scrypt_mine.o \
+    obj/scrypt.o \
     obj/scrypt-x86.o \
-    obj/scrypt-x86_64.o
+    obj/scrypt-x86_64.o \
 
 ifndef USE_UPNP
 	override USE_UPNP = -
@@ -115,18 +119,18 @@ else
 endif
 endif
 
-ifneq (${USE_IPV6}, -)
-	DEFS += -DUSE_IPV6=$(USE_IPV6)
-endif
-
 all: WinCoind
 
-test check: test_WinCoin FORCE
-	./test_WinCoin
+LIBS += $(CURDIR)/leveldb/libleveldb.a $(CURDIR)/leveldb/libmemenv.a
+DEFS += $(addprefix -I,$(CURDIR)/leveldb/include)
+DEFS += $(addprefix -I,$(CURDIR)/leveldb/helpers)
+OBJS += obj/txdb-leveldb.o
+leveldb/libleveldb.a:
+	@echo "Building LevelDB ..."; cd leveldb; make libleveldb.a libmemenv.a; cd ..
+obj/txdb-leveldb.o: leveldb/libleveldb.a
 
 # auto-generated dependencies:
 -include obj/*.P
--include obj-test/*.P
 
 obj/build.h: FORCE
 	/bin/sh ../share/genbuild.sh obj/build.h
@@ -135,6 +139,13 @@ DEFS += -DHAVE_BUILD_INFO
 
 obj/%.o: %.cpp
 	$(CXX) -c $(CFLAGS) -MMD -MF $(@:%.o=%.d) -o $@ $<
+	@cp $(@:%.o=%.d) $(@:%.o=%.P); \
+	  sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
+	      -e '/^$$/ d' -e 's/$$/ :/' < $(@:%.o=%.d) >> $(@:%.o=%.P); \
+	  rm -f $(@:%.o=%.d)
+
+obj/zerocoin/%.o: zerocoin/%.cpp
+	$(CXX) -c $(xCXXFLAGS) -MMD -MF $(@:%.o=%.d) -o $@ $<
 	@cp $(@:%.o=%.d) $(@:%.o=%.P); \
 	  sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
 	      -e '/^$$/ d' -e 's/$$/ :/' < $(@:%.o=%.d) >> $(@:%.o=%.P); \
@@ -149,24 +160,10 @@ obj/scrypt-x86_64.o: scrypt-x86_64.S
 WinCoind: $(OBJS:obj/%=obj/%)
 	$(CXX) $(CFLAGS) -o $@ $(LIBPATHS) $^ $(LIBS)
 
-TESTOBJS := $(patsubst test/%.cpp,obj-test/%.o,$(wildcard test/*.cpp))
-
-obj-test/%.o: test/%.cpp
-	$(CXX) -c $(TESTDEFS) $(CFLAGS) -MMD -MF $(@:%.o=%.d) -o $@ $<
-	@cp $(@:%.o=%.d) $(@:%.o=%.P); \
-	  sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
-	      -e '/^$$/ d' -e 's/$$/ :/' < $(@:%.o=%.d) >> $(@:%.o=%.P); \
-	  rm -f $(@:%.o=%.d)
-
-test_WinCoin: $(TESTOBJS) $(filter-out obj/init.o,$(OBJS:obj/%=obj/%))
-	$(CXX) $(CFLAGS) -o $@ $(LIBPATHS) $^ $(LIBS) $(TESTLIBS)
-
 clean:
-	-rm -f WinCoind test_WinCoin
+	-rm -f WinCoind
 	-rm -f obj/*.o
-	-rm -f obj-test/*.o
 	-rm -f obj/*.P
-	-rm -f obj-test/*.P
 	-rm -f obj/build.h
 
 FORCE:

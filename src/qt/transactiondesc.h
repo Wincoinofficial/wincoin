@@ -1,5 +1,5 @@
-#ifndef TRANSACTIONDWC_H
-#define TRANSACTIONDWC_H
+#ifndef TRANSACTIONDESC_H
+#define TRANSACTIONDESC_H
 
 #include <QString>
 #include <QObject>
@@ -21,4 +21,4 @@ private:
     static QString FormatTxStatus(const CWalletTx& wtx);
 };
 
-#endif // TRANSACTIONDWC_H
+#endif // TRANSACTIONDESC_H

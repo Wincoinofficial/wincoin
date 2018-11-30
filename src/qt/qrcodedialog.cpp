@@ -7,9 +7,7 @@
 #include "optionsmodel.h"
 
 #include <QPixmap>
-#if QT_VERSION < 0x050000
- #include <QUrl>
-#endif
+#include <QUrl>
 
 #include <qrencode.h>
 
@@ -85,7 +83,7 @@ void QRCodeDialog::genCode()
 
 QString QRCodeDialog::getURI()
 {
-    QString ret = QString("bitcoin:%1").arg(address);
+    QString ret = QString("WinCoin:%1").arg(address);
     int paramCount = 0;
 
     ui->outUri->clear();

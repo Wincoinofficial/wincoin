@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>715</width>
-    <height>454</height>
+    <width>573</width>
+    <height>342</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -86,7 +86,7 @@
           <item row="0" column="0">
            <widget class="QLabel" name="label">
             <property name="text">
-             <string>Balance:</string>
+             <string>Spendable:</string>
             </property>
            </widget>
           </item>
@@ -102,10 +102,10 @@
              <cursorShape>IBeamCursor</cursorShape>
             </property>
             <property name="toolTip">
-             <string>Your current balance</string>
+             <string>Your current spendable balance</string>
             </property>
             <property name="text">
-             <string notr="true">0 WC</string>
+             <string notr="true">0 TOR</string>
             </property>
             <property name="textInteractionFlags">
              <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
@@ -134,7 +134,7 @@
              <string>Total of coins that was staked, and do not yet count toward the current balance</string>
             </property>
             <property name="text">
-             <string notr="true">0 WC</string>
+             <string notr="true">0 TOR</string>
             </property>
             <property name="textInteractionFlags">
              <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
@@ -163,7 +163,7 @@
              <string>Total of transactions that have yet to be confirmed, and do not yet count toward the current balance</string>
             </property>
             <property name="text">
-             <string notr="true">0 WC</string>
+             <string notr="true">0 TOR</string>
             </property>
             <property name="textInteractionFlags">
              <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
@@ -189,27 +189,46 @@
              <string>Mined balance that has not yet matured</string>
             </property>
             <property name="text">
-             <string notr="true">0 WC</string>
+             <string notr="true">0 TOR</string>
             </property>
             <property name="textInteractionFlags">
              <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
             </property>
            </widget>
           </item>
-          <item row="4" column="0">
-           <widget class="QLabel" name="label_2">
-            <property name="text">
-             <string>Number of transactions:</string>
+          <item row="4" column="0" colspan="2">
+           <widget class="Line" name="line">
+            <property name="orientation">
+             <enum>Qt::Horizontal</enum>
             </property>
            </widget>
           </item>
-          <item row="4" column="1">
-           <widget class="QLabel" name="labelNumTransactions">
+          <item row="5" column="0">
+           <widget class="QLabel" name="labelTotalText">
+            <property name="text">
+             <string>Total:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="1">
+           <widget class="QLabel" name="labelTotal">
+            <property name="font">
+             <font>
+              <weight>75</weight>
+              <bold>true</bold>
+             </font>
+            </property>
+            <property name="cursor">
+             <cursorShape>IBeamCursor</cursorShape>
+            </property>
             <property name="toolTip">
-             <string>Total number of transactions in wallet</string>
+             <string>Your current total balance</string>
             </property>
             <property name="text">
-             <string notr="true">0</string>
+             <string notr="true">0 BTC</string>
+            </property>
+            <property name="textInteractionFlags">
+             <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
             </property>
            </widget>
           </item>
@@ -225,34 +244,19 @@
        </property>
        <property name="sizeHint" stdset="0">
         <size>
-         <width>10</width>
+         <width>20</width>
          <height>40</height>
         </size>
        </property>
       </spacer>
      </item>
      <item>
-      <widget class="QLabel" name="label_6">
+      <widget class="QLabel" name="label_2">
        <property name="text">
         <string/>
        </property>
        <property name="pixmap">
-        <pixmap resource="../bitcoin.qrc">:/images/backg</pixmap>
-       </property>
-       <property name="scaledContents">
-        <bool>false</bool>
-       </property>
-       <property name="alignment">
-        <set>Qt::AlignCenter</set>
-       </property>
-       <property name="wordWrap">
-        <bool>false</bool>
-       </property>
-       <property name="margin">
-        <number>0</number>
-       </property>
-       <property name="indent">
-        <number>0</number>
+        <pixmap resource="../bitcoin.qrc">:/icons/WinCoin</pixmap>
        </property>
       </widget>
      </item>
@@ -328,44 +332,21 @@
           </property>
          </widget>
         </item>
-        <item>
-         <spacer name="verticalSpacer_2">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
        </layout>
       </widget>
      </item>
      <item>
-      <widget class="QPushButton" name="pushButton">
-       <property name="enabled">
-        <bool>true</bool>
+      <spacer name="verticalSpacer_2">
+       <property name="orientation">
+        <enum>Qt::Vertical</enum>
        </property>
-       <property name="text">
-        <string>Start Mining</string>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>20</width>
+         <height>40</height>
+        </size>
        </property>
-      </widget>
-     </item>
-     <item>
-      <widget class="QPushButton" name="unlockWalletButton">
-       <property name="enabled">
-        <bool>true</bool>
-       </property>
-       <property name="text">
-        <string>Unlock Wallet</string>
-       </property>
-       <property name="checkable">
-        <bool>false</bool>
-       </property>
-      </widget>
+      </spacer>
      </item>
     </layout>
    </item>

@@ -2,7 +2,7 @@
 #define SENDCOINSDIALOG_H
 
 #include <QDialog>
-#include <QString>  // Coin Control
+#include <QString>
 
 namespace Ui {
     class SendCoinsDialog;
@@ -41,9 +41,6 @@ public slots:
     void updateRemoveEnabled();
     void setBalance(qint64 balance, qint64 stake, qint64 unconfirmedBalance, qint64 immatureBalance);
 
-signals:
-    void sendCoinsClicked(QString name);
-
 private:
     Ui::SendCoinsDialog *ui;
     WalletModel *model;
@@ -53,8 +50,6 @@ private slots:
     void on_sendButton_clicked();
     void removeEntry(SendCoinsEntry* entry);
     void updateDisplayUnit();
-
-    // Coin Control
     void coinControlFeatureChanged(bool);
     void coinControlButtonClicked();
     void coinControlChangeChecked(int);
